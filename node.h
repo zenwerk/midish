@@ -21,12 +21,17 @@ struct node;
 struct node_vmt;
 struct exec;
 
+/* 構文木 */
 struct node {
 	struct node_vmt *vmt;
 	struct data *data;
 	struct node *next, *list;
 };
 
+/*
+ * vmt = virtual method table
+ * node_vmt -> 構文木仮想メソッドテーブル
+ */
 struct node_vmt {
 	char *name;
 	unsigned (*exec)(struct node *, struct exec *, struct data **);

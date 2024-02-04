@@ -61,10 +61,15 @@
 #define EV_CTL_UNKNOWN		255	/* unknown controller number */
 
 /*
- * an event: structure used to store MIDI events and some
- * midish-sepcific events (tempo changes, etc...). This structure have
- * to be kept as small as possible, because its used to store events
- * on tracks, that may contain a lot of events
+ * En:
+ *   an event: structure used to store MIDI events and some
+ *   midish-sepcific events (tempo changes, etc...). This structure have
+ *   to be kept as small as possible, because its used to store events
+ *   on tracks, that may contain a lot of events
+ *
+ * Ja:
+ *   MIDIイベント保存とmidish固有のイベント処理のための構造体.
+ *   これはtrackに多く保存されるため, ev構造体は可能な限り小さくなるようにする.
  */
 struct ev {
 	unsigned char cmd, dev, ch;
@@ -99,10 +104,16 @@ struct ev {
 
 
 /*
- * range of events, the cmd argument is the event type. To facilitate
- * matching 'struct ev' agains 'struct evspec', we try (when possible)
- * to use the same constants. Currently this works for all events
- * except EV_NON, EV_KAT, EV_NOFF, which all correspond to EVSPEC_NOTE
+ * En:
+ *   range of events, the cmd argument is the event type. To facilitate
+ *   matching 'struct ev' agains 'struct evspec', we try (when possible)
+ *   to use the same constants. Currently this works for all events
+ *   except EV_NON, EV_KAT, EV_NOFF, which all correspond to EVSPEC_NOTE
+ * Ja:
+ *   eventの範囲を表す. 引数cmd->イベントタイプ.
+ *   'struct ev' と 'struct evspec' の照合を容易にするため(可能ならば)定数を使う.
+ *   現在はEV_NON, EV_KAT, EV_NOFF _以外_のイベントでは動く.
+ *   なお, EV_NON, EV_KAT, EV_NOFF は EVSPEC_NOTE にマッチする
  */
 struct evspec {
 #define EVSPEC_EMPTY		EV_NULL
@@ -116,7 +127,7 @@ struct evspec {
 #define EVSPEC_RPN		EV_RPN
 #define EVSPEC_XCTL		EV_XCTL
 #define EVSPEC_XPC		EV_XPC
-	unsigned cmd;
+	unsigned cmd; /* イベントタイプ */
 	unsigned dev_min, dev_max;	/* except for EMPTY */
 	unsigned ch_min, ch_max;	/* except for EMPTY */
 	unsigned v0_min, v0_max;	/* except for EMPTY, ANY */
@@ -125,11 +136,11 @@ struct evspec {
 
 
 /*
- * we use a static array (indexed by 'cmd') of the following
- * structures to lookup for events properties
+ * we use a static array (indexed by 'cmd') of the following structures to lookup for events properties.
+ * 'cmd'でindexされたevinfoの静的配列を, eventのプロパティ検索のために使う.
  */
 struct evinfo {
-	char *ev, *spec;
+	char *ev /* イベント名 */, *spec /* */;
 #define EV_HAS_DEV	0x01	/* if ev->dev is used */
 #define EV_HAS_CH	0x02	/* if ev->ch is used */
 	unsigned flags;		/* bitmap of above */
@@ -152,7 +163,7 @@ struct evinfo {
 	unsigned char *pattern;
 };
 
-extern struct evinfo evinfo[EV_NUMCMD];
+extern struct evinfo evinfo[EV_NUMCMD]; /* globalなevプロパティ検索用配列 */
 
 void	 ev_log(struct ev *);
 unsigned ev_str2cmd(struct ev *, char *);
@@ -173,9 +184,13 @@ void	 evspec_map(struct evspec *, struct evspec *,
      struct evspec *, struct evspec *);
 
 /*
- * describes a controller number; this structures defines
- * how varius other routines bahave when a controller
- * event with the same number is found
+ * En:
+ *   describes a controller number; this structures defines
+ *   how varius other routines bahave when a controller
+ *   event with the same number is found
+ * Ja:
+ *   コントローラ番号を表す; この構造体は同じ番号のコントローライベントが見つかった時に
+ *   多様な他のルーチンがどのように振る舞うかを定義する
  */
 struct evctl {
 	char *name;		/* controller name or NULL if none */

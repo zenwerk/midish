@@ -28,6 +28,7 @@
 #include "mididev.h"
 #include "str.h"
 
+/* ALSA経由でのMIDIデバイスを表す構造体 */
 struct alsa {
 	struct mididev mididev;		/* device stuff */
 	snd_seq_t *seq_handle;		/* sequencer connection */
@@ -74,6 +75,7 @@ alsa_err(const char *file, int ln, const char *fn, int e, const char *fmt, ...)
 	}
 }
 
+/** ALSA 経由で新しいMIDIデバイスを取得する **/
 struct mididev *
 alsa_new(char *path, unsigned mode)
 {

@@ -50,6 +50,10 @@ main(int argc, char **argv)
 			goto err;
 		}
 	}
+	// https://linuxjm.osdn.jp/html/LDP_man-pages/man3/getopt.3.html
+	// optind は option-index の意味
+	// 現在どの argv を指しているかのインデックスで初期値は1
+	// unistd.h がincludeしている getopt.h 由来の変数(多分)
 	argc -= optind;
 	argv += optind;
 	if (argc >= 1) {
@@ -58,6 +62,7 @@ main(int argc, char **argv)
 		return 0;
 	}
 
+        // XXX: [1] ここからメインループへ
 	exitcode = user_mainloop();
 
 	return exitcode ? 0 : 1;

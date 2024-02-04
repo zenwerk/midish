@@ -62,8 +62,8 @@ struct proc {
 
 /*
  * exec is the interpreter's environment
+ * インタプリタ環境
  */
-
 struct exec {
 	struct name *globals;	/* list of global variables */
 	struct name **locals;	/* pointer to list of local variables */

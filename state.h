@@ -24,43 +24,53 @@ struct seqev;
 struct statelist;
 
 struct state  {
-	struct state *next, **prev;	/* for statelist */
-	struct ev ev;			/* last event */
-	unsigned phase;			/* current phase (of the 'ev' field) */
+	struct state *next, **prev;	/* for statelist | 連結リストのため */
+	struct ev ev;			/* last event | 最後のイベント */
+	unsigned phase;			/* current phase (of the 'ev' field) | 現在の(ev field)のphase */
 	/*
-	 * the following flags are set by statelist_update() and
-	 * statelist_outdate() and can be read by other routines,
-	 * but shouldn't be changed
+	 * En:
+	 *   the following flags are set by statelist_update() and
+	 *   statelist_outdate() and can be read by other routines,
+	 *   but shouldn't be changed
+	 * Ja:
+	 *   statelist_update/statelist_outdate の時に以下のflagがセットされる
+	 *   他のルーチンから読み取り可能だが変更不可(であるべき)
 	 */
-#define STATE_NEW	1		/* just created, never updated */
-#define STATE_CHANGED	2		/* updated within the current tick */
-#define STATE_BOGUS	4		/* frame detected as bogus */
+#define STATE_NEW	1		/* just created, never updated | 作成・未更新 */
+#define STATE_CHANGED	2		/* updated within the current tick | 現在tick内の更新 */
+#define STATE_BOGUS	4		/* frame detected as bogus | 偽のフレームとして検出 */
 #define STATE_NESTED	8		/* nested frame */
 	unsigned flags;			/* bitmap of above */
-	unsigned nevents;		/* number of events before timeout */
+	unsigned nevents;		/* number of events before timeout | タイムアウト前のイベント数 */
 
 	/*
-	 * the following are general purpose fields that are ignored
-	 * by state_xxx() and statelist_xxx() routines. Other
-	 * subsystems (seqptr, filt, ...) use them privately for
-	 * various purposes. See specific modules to get their various
-	 * significances.
+	 * En:
+	 *   the following are general purpose fields that are ignored
+	 *   by state_xxx() and statelist_xxx() routines. Other
+	 *   subsystems (seqptr, filt, ...) use them privately for
+	 *   various purposes. See specific modules to get their various
+	 *   significances.
+	 * Ja:
+	 *   いろいろな目的のための使うフィールド
 	 */
 	unsigned tag;			/* user-defined tag */
-	unsigned tic;			/* absolute tic of the FIRST event */
-	struct seqev *pos;		/* pointer to the FIRST event */
+	unsigned tic;			/* absolute tic of the FIRST event | 最初のイベントのための絶対tic数 */
+	struct seqev *pos;		/* pointer to the FIRST event | 最初のイベントへのポインタ */
 };
 
 struct statelist {
 	/*
-	 * instead of a simple list, we should use a hash table here,
-	 * but statistics on real-life cases seem to show that lookups
-	 * are very fast thanks to the state ordering (average lookup
-	 * time is around 1-2 iterations for a common MIDI file), so
-	 * we keep using a simple list
+	 * En:
+	 *   instead of a simple list, we should use a hash table here,
+	 *   but statistics on real-life cases seem to show that lookups
+	 *   are very fast thanks to the state ordering (average lookup
+	 *   time is around 1-2 iterations for a common MIDI file), so
+	 *   we keep using a simple list
+	 * Ja:
+	 *   hash-tableを使うべきだが, 実世界の計測でリストで十分なパフォーマンスが出たのでリストでOK
 	 */
-	struct state *first;	/* head of the state list */
-	unsigned changed;	/* if changed within this tick */
+	struct state *first;	/* head of the state list | 先頭の state へのポインタ */
+	unsigned changed;	/* if changed within this tick | このtickで変更されたか？ */
 	unsigned serial;	/* unique ID */
 #ifdef STATE_PROF
 	struct prof prof;

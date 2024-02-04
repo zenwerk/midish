@@ -19,21 +19,30 @@
 
 #include "ev.h"
 
+/*
+ * seqev はシーケンスイベントを表す構造体
+ */
 struct seqev {
-	unsigned delta;
+	unsigned delta; // 前後イベントの隙間時間
 	struct ev ev;
-	struct seqev *next, **prev;
+	struct seqev *next, **prev; // リンクリスト的つながり
 };
 
+/*
+ * track は seqev リンクリストの先頭と末尾を指す構造体
+ */
 struct track {
-	struct seqev eot;		/* end-of-track event */
-	struct seqev *first;		/* head of the event list */
+	struct seqev eot;		/* end-of-track event | trackの最後のイベント */
+	struct seqev *first;		/* head of the event list | trackイベントの先頭 */
 };
 
+/*
+ * track_data は
+ */
 struct track_data {
 	struct seqev_data {
-		unsigned delta;
-		struct ev ev;
+		unsigned delta; // 前後イベントの隙間時間
+		struct ev ev; // イベントデータ
 	} *evs;
 	unsigned int pos, nrm, nins;
 };

@@ -16,13 +16,13 @@
 
 /*
  * mididev is a generic midi device structure it doesn't contain any
- * device-specific fields and shoud be extended by other structures
+ * device-specific fields and should be extended by other structures
  *
  * this module also, manages a global table of generic midi
  * devices. The table is indexed by the device "unit" number, the
  * same that is stored in the event structure
  *
- * this modules converts midi bytes (ie 'unsigned char') to midi events
+ * these modules convert midi bytes (ie 'unsigned char') to midi events
  * (struct ev) and calls mux_xxx callbacks to handle midi
  * input. Similarly, it converts midi events to bytes and sends them on
  * the wire
@@ -120,6 +120,7 @@ mtc_setfps(struct mtc *mtc, unsigned id)
 
 /*
  * called when timeout expires, ie MTC stopped
+ * タイムアウトが発生したとき, つまりMTCが停止したときに呼び出されます。
  */
 void
 mtc_timo(struct mtc *mtc)
@@ -222,6 +223,7 @@ mtc_full(struct mtc *mtc, struct sysex *x)
 
 /*
  * initialize the device independent part of the device structure
+ * mididev構造体のMIDIデバイス非依存の箇所を初期化する
  */
 void
 mididev_init(struct mididev *o, struct devops *ops, unsigned mode)
@@ -290,6 +292,7 @@ mididev_close(struct mididev *o)
 
 /*
  * flush the given midi device
+ * mididev構造体にため込んだバッファを実際に機器に送信する
  */
 void
 mididev_flush(struct mididev *o)
@@ -299,7 +302,7 @@ mididev_flush(struct mididev *o)
 	unsigned i;
 
 	if (!o->eof) {
-		if (mididev_debug && o->oused > 0) {
+		if (mididev_debug && o->oused > 0) { // Debug Logging
 			log_puts("mididev_flush: ");
 			log_putu(timo_abstime / 24);
 			log_puts(": dev ");
@@ -311,22 +314,24 @@ mididev_flush(struct mididev *o)
 			}
 			log_puts("\n");
 		}
-		todo = o->oused;
-		buf = o->obuf;
+
+		/** 送信処理ここから **/
+		todo = o->oused; // todo = 書き込みべきバイト数
+		buf = o->obuf; // obuf = output buffer
 		while (todo > 0) {
-			count = o->ops->write(o, buf, todo);
+			count = o->ops->write(o, buf, todo); // ここで送信している
 			if (o->eof)
 				break;
 			todo -= count;
 			buf += count;
 		}
-		if (o->oused)
-			o->osensto = MIDIDEV_OSENSTO;
+		if (o->oused) // 過去組むべきバイト数が残っている
+			o->osensto = MIDIDEV_OSENSTO; // TODO: これはなに？
 	}
 	o->oused = 0;
 }
 
-/*
+/**
  * mididev_inputcb is called when midi data becomes available
  * it calls mux_evcb
  */
@@ -466,7 +471,7 @@ mididev_inputcb(struct mididev *o, unsigned char *buf, unsigned count)
 	}
 }
 
-/*
+/**
  * write a single midi byte to the output buffer, if
  * it is full, flush it. Shouldn't we inline it?
  */
@@ -476,7 +481,7 @@ mididev_out(struct mididev *o, unsigned data)
 	if (!(o->mode & MIDIDEV_MODE_OUT)) {
 		return;
 	}
-	if (o->oused == MIDIDEV_BUFLEN) {
+	if (o->oused == MIDIDEV_BUFLEN) { // 最大400byteをため込む
 		mididev_flush(o);
 	}
 	o->obuf[o->oused] = (unsigned char)data;
@@ -502,7 +507,7 @@ mididev_putstop(struct mididev *o)
 void
 mididev_puttic(struct mididev *o)
 {
-	mididev_out(o, MIDI_TIC);
+	mididev_out(o, MIDI_TIC); /* send F8 */
 	if (o->sync)
 		mididev_flush(o);
 }
@@ -515,9 +520,9 @@ mididev_putack(struct mididev *o)
 		mididev_flush(o);
 }
 
-/*
- * convert a voice event to byte stream and queue
- * it for sending
+/**
+ * - convert a voice event to byte stream and queue it for sending.
+ * - 音声イベントをバイトストリームに変換し、送信のためにキューに入れる
  */
 void
 mididev_putev(struct mididev *o, struct ev *ev)
@@ -585,7 +590,7 @@ end:
 		mididev_flush(o);
 }
 
-/*
+/**
  * queue raw data for sending
  */
 void
@@ -611,7 +616,7 @@ mididev_sendraw(struct mididev *o, unsigned char *buf, unsigned len)
 		mididev_flush(o);
 }
 
-/*
+/**
  * initialize the device table
  */
 void
@@ -622,11 +627,11 @@ mididev_listinit(void)
 		mididev_byunit[i] = NULL;
 	}
 	mididev_list = NULL;
-	mididev_mtcsrc = NULL;	/* no external timer, use internal timer */
-	mididev_clksrc = NULL;	/* no clock source, use internal clock */
+	mididev_mtcsrc = NULL;	/* no external timer, use internal timer | 外部タイマーなし,内部タイマーを使用 */
+	mididev_clksrc = NULL;	/* no clock source, use internal clock   | 外部クロックなし, 内部クロックを使用 */
 }
 
-/*
+/**
  * unregister all entries of the device table
  */
 void
@@ -637,17 +642,17 @@ mididev_listdone(void)
 
 	for (i = 0; i < DEFAULT_MAXNDEVS; i++) {
 		dev = mididev_byunit[i];
-		if (dev != NULL) {
-			dev->ops->del(dev);
-			mididev_byunit[i] = NULL;
-		}
-	}
-	mididev_clksrc = NULL;
-	mididev_list = NULL;
+                if (dev != NULL) {
+                  dev->ops->del(dev);
+                  mididev_byunit[i] = NULL;
+                }
+        }
+        mididev_clksrc = NULL;
+        mididev_list = NULL;
 }
 
-/*
- * register a new device number (ie "unit")
+/**
+ * register a new device number (ie "unit") | 新しいデバイス番号を登録(MIDIは1~16まで)
  */
 unsigned
 mididev_attach(unsigned unit, char *path, unsigned mode)
@@ -678,7 +683,7 @@ mididev_attach(unsigned unit, char *path, unsigned mode)
 	return 1;
 }
 
-/*
+/**
  * unregister the given device number
  */
 unsigned

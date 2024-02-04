@@ -19,8 +19,8 @@
  *	- midi input and output
  *	- internal external/timer
  *
- * the clock unit is the 24th of microsecond (thus the tempo is stored
- * with the same accuracy as in standard midi files).
+ * the clock unit is the 24th of microsecond (thus the tempo is stored with the same accuracy as in standard midi files).
+ * クロック単位がマイクロ秒の24倍であるため、標準的なMIDIファイルと同じ精度でテンポが保存されます）。
  *
  * the timer has the following states:
  * STOP -> STARTWAIT -> START -> FIRST_TIC -> NEXT_TIC -> STOP
@@ -77,20 +77,20 @@
  * delay between the START event and the first TIC in 24ths of a micro
  * second, here we use 1 tic at 30bpm
  */
-#define MUX_START_DELAY	  (24000000UL / 3)
+#define MUX_START_DELAY	  (24000000UL / 3) /* = 8000000UL (UL:unsigned long) */
 
-unsigned mux_isopen = 0;
+unsigned mux_isopen = 0; /* マルチプレクサ is Open (グローバル変数) |  */
 unsigned mux_debug = 0;
 unsigned mux_ticrate;
 unsigned long mux_ticlength, mux_curpos, mux_nextpos;
 unsigned mux_curtic;
-unsigned mux_phase, mux_reqphase;
+unsigned mux_phase /* 現在のフェーズ */, mux_reqphase; /* 要求フェーズ */
 unsigned mux_manualstart = 1;
 void *mux_addr;
 unsigned long mux_wallclock;
 
 
-struct statelist mux_istate, mux_ostate;
+struct statelist mux_istate /* 入力状態 */ , mux_ostate; /* 出力状態 */
 
 /*
  * the following are defined in mdep.c
@@ -104,13 +104,14 @@ void mux_chgphase(unsigned phase);
 
 /*
  * initialize all structures and open all midi devices
+ * 全ての構造体の初期化とMIDIデバイスのオープンを行う
  */
 void
 mux_open(void)
 {
 	struct mididev *i;
 
-	timo_init();
+	timo_init(); /* timeout init */
 	statelist_init(&mux_istate);
 	statelist_init(&mux_ostate);
 	mixout_start();
@@ -119,11 +120,13 @@ mux_open(void)
 	/*
 	 * default tempo is 120 beats per minutes with 24 tics per
 	 * beat (time unit = 24th of microsecond)
+	 *
+	 * デフォルトのテンポは120拍/分、1拍24ティック。(時間単位は24マイクロ秒）
 	 */
 	mux_ticlength = TEMPO_TO_USEC24(DEFAULT_TEMPO, DEFAULT_TPB);
 
 	/*
-	 * default tics per second = 96
+	 * default tics per second = 96 | 96tic/second
 	 */
 	mux_ticrate = DEFAULT_TPU;
 
@@ -137,7 +140,7 @@ mux_open(void)
 		i->osensto = MIDIDEV_OSENSTO;
 		mididev_open(i);
 	}
-	mux_mdep_open();
+	mux_mdep_open(); /* シグナルハンドラと setitimer の設定 */
 
 	mux_curpos = 0;
 	mux_nextpos = 0;
@@ -200,8 +203,9 @@ mux_logphase(unsigned phase)
 }
 #endif
 
-/*
+/**
  * change the current phase
+ * グローバル変数 mux_phase を更新する関数
  */
 void
 mux_chgphase(unsigned phase)
@@ -248,9 +252,9 @@ mux_sendstart(void)
 		if (i->sendclk && i != mididev_clksrc) {
 			i->ticdelta = i->ticrate;
 			/*
-			 * send a spurious tick just before the start
-			 * event in order to notify that we are the
-			 * master
+			 * send a spurious tick just before the start event in order to notify that we are the master
+			 *
+			 * 私たちがマスターであることを通知するために、開始イベントの直前に偽の tic を送信する
 			 */
 			mididev_puttic(i);
 			mididev_putstart(i);
@@ -273,9 +277,13 @@ mux_sendstop(void)
 	}
 }
 
-/*
+/**
  * send the given voice event to the appropriate device, no
  * other routines should be used to send events
+ *
+ * 与えられたボイスイベントを指定デバイスに送信する.
+ * このメソッド以外でイベント送信をしてはいけない.
+ * つまりこのメソッドの呼び出し元をたどればシーケンス元に辿りつくはず
  */
 void
 mux_putev(struct ev *ev)
@@ -340,13 +348,14 @@ mux_sendraw(unsigned unit, unsigned char *buf, unsigned len)
 
 /*
  * called when MTC timer starts (full frame message).
+ * MTCタイマーがスタートしたときの呼ばれる関数(フルフレームメッセージを受け取った)
  */
 void
 mux_mtcstart(unsigned mtcpos)
 {
 	/*
-	 * if already started, trigger a MTC stop to enter
-	 * a state in which we can start
+	 * if already started, trigger a MTC stop to enter a state in which we can start
+	 * すでに開始している場合は, MTC停止をトリガーし、再度開始できる状態にする。
 	 */
 	if (mux_phase >= MUX_START && mux_phase <= MUX_NEXT) {
 		if (mux_debug)
@@ -356,6 +365,7 @@ mux_mtcstart(unsigned mtcpos)
 
 	/*
 	 * check if we're trying to start, if not just return
+	 * 開始できるかチェックし、ダメなら return
 	 */
 	if (mux_phase == MUX_STOP) {
 		if (mux_debug)
@@ -364,8 +374,8 @@ mux_mtcstart(unsigned mtcpos)
 	}
 
 	/*
-	 * ignore position change if we're not using MTC because
-	 * it's already set (e.g., internally generated MTC start)
+	 * ignore position change if we're not using MTC because it's already set (e.g., internally generated MTC start)
+	 * すでに設定されているため、MTCを使用していない場合は位置の変更を無視する（例：内部生成されたMTCスタート）
 	 */
 	if (mididev_mtcsrc) {
 		mux_curpos = song_gotocb(usong, LOC_MTC, mtcpos);
@@ -384,8 +394,9 @@ mux_mtcstart(unsigned mtcpos)
 	mux_startcb();
 }
 
-/*
+/**
  * called periodically by the MTC timer
+ * MTCタイマによって定期的に呼ばれる関数
  */
 void
 mux_mtctick(unsigned delta)
@@ -424,9 +435,12 @@ mux_mtcstop(void)
 	}
 }
 
-/*
+/**
+ * XXX: [5] シーケンサのタイマが動いたときに呼ばれるのがここ
  * call-back called every time the clock changes, the argument
  * contains the number of 24th of seconds elapsed since the last call
+ *
+ * 時間変化毎に呼ばれるコールバック. 引数は前回の呼び出しからの経過マイクロ秒数（24倍の経過時間?）を指定する。 .
  */
 void
 mux_timercb(unsigned long delta)
@@ -435,12 +449,13 @@ mux_timercb(unsigned long delta)
 
 	/*
 	 * update wall clock
+	 * グローバルな経過時間時計を更新する
 	 */
 	mux_wallclock += delta;
 
-
 	/*
 	 * run expired timeouts
+	 * 時間経過した timo の処理を実施する
 	 */
 	timo_update(delta);
 
@@ -449,6 +464,7 @@ mux_timercb(unsigned long delta)
 	 * XXX: convert this to timo_xxx() routines
 	 */
 	for (dev = mididev_list; dev != NULL; dev = dev->next) {
+		// アクティブセンシング
 		if (dev->isensto) {
 			if (dev->isensto <= delta) {
 				dev->isensto = 0;
@@ -465,7 +481,7 @@ mux_timercb(unsigned long delta)
 			} else {
 				dev->osensto -= delta;
 			}
-		}
+		// MTC のソース解析
 		if (dev->imtc.timo) {
 			if (dev->imtc.timo <= delta) {
 				dev->imtc.timo = 0;
@@ -477,8 +493,10 @@ mux_timercb(unsigned long delta)
 	}
 
 	/*
-	 * if there's no ext MTC source, then generate one internally
-	 * using the current sequencer state as hints
+	 * if there's no ext MTC source, then generate one internally using the current sequencer state as hints.
+	 *
+	 * MTC入力がなければ,現在のシーケンサの状態をヒントに内部的にMTC信号を生成する.
+	 * ここから先が実際に演奏するところ -> mux_mtctick の先が putev につながる
 	 */
 	if (!mididev_mtcsrc && !mididev_clksrc) {
 		switch (mux_phase) {
@@ -538,8 +556,9 @@ mux_ticcb(void)
 	}
 }
 
-/*
+/**
  * called when a MIDI START event is received from an external device
+ * 外部デバイスからMIDI-STARTイベントを受け取った時に呼ばれるコールバック
  */
 void
 mux_startcb(void)
@@ -740,24 +759,24 @@ mux_chgticrate(unsigned tpu)
 	mux_ticrate = tpu;
 }
 
-/*
- * start waiting for a MIDI START event (or generate one if
- * we're the clock master).
+/**
+ * start waiting for a MIDI START event (or generate one if we're the clock master).
+ * MIDI-STARTイベントを待ち始める. 自分がclockマスターならclockを生成する
  */
 void
 mux_startreq(int manualstart)
 {
 	struct mididev *dev;
-	static unsigned char mmc_start[] = { 0xf0, 0x7f, 0x7f, 0x06, 0x02, 0xf7 };
+	static unsigned char mmc_start[] = { 0xf0, 0x7f, 0x7f, 0x06, 0x02, 0xf7 }; // mmc = midi machine control
 
 	mux_manualstart = manualstart;
-	mux_reqphase = MUX_STARTWAIT;
+	mux_reqphase = MUX_STARTWAIT; /* スタートイベントを待つフェイズであると指示 */
 	if (mux_phase != MUX_STOP) {
-		log_puts("bad state to call mux_startreq()\n");
+		log_puts("bad state to call mux_startreq()\n"); /* MUX_STOP状態以外で呼び出されてたらエラー */
 		panic();
 	}
 	mux_chgphase(MUX_STARTWAIT);
-	if (!mididev_clksrc && !mididev_mtcsrc) {
+	if (!mididev_clksrc && !mididev_mtcsrc) { // clksrc or mmtsrc が未定義なら自分がclock
 		if (mux_debug)
 			log_puts("mux_startreq: generated mtc start\n");
 		mux_curpos = 0;

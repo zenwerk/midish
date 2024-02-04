@@ -25,11 +25,22 @@
  * the higher ID source.
  *
  * For continuous controllers terminated states are kept for around 1
- * second, this will block events from other lower prority
+ * second, this will block events from other lower prority | TODO: fix typo -> priority
  * sources. For instance, this can be used to adjust a controller in
  * realtime while a track using the same controller is playing (input
  * ID is zero, and has precedence over tracks).
  *
+ */
+
+/*
+ * 複数のソースをミックスして結果をMIDI出力に送信すると、競合を回避するためにstatelistが維持されます.
+ *
+ * 各ソースはIDを持ち、eventが競合した場合低いIDがキャンセルされる.
+ *
+ * 継続的なコントローラーの場合、終了ステータスは約1秒間保持されます。
+ * これにより、他の優先度の低いソースからのイベントがブロックされます。
+ * たとえば、これを使用して、同じコントローラーを使用するトラックの再生中に
+ * コントローラーをリアルタイムで調整できます（入力IDはゼロで、トラックを処理します）
  */
 
 #include "utils.h"
@@ -40,7 +51,7 @@
 #include "timo.h"
 #include "state.h"
 
-#define MIXOUT_TIMO (1000000UL)
+#define MIXOUT_TIMO (1000000UL) /* 100万 = 1 microsec */
 #define MIXOUT_MAXTICS 24
 
 void mixout_timocb(void *);
@@ -70,6 +81,10 @@ mixout_stop(void)
 	statelist_done(&mixout_slist);
 }
 
+/**
+ * song構造体が実際にmidi信号を飛ばすために呼び出すI/F関数がこれ
+ * song.c からしか呼ばれない
+ */
 void
 mixout_putev(struct ev *ev, unsigned id)
 {
@@ -136,6 +151,9 @@ mixout_putev(struct ev *ev, unsigned id)
 }
 
 
+/**
+ * 1microsec(MIXOUT_TIMO) 毎に呼ばれるstatelistメンテ関数
+ */
 void
 mixout_timocb(void *addr)
 {

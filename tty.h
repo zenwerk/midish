@@ -26,10 +26,17 @@ enum TTY_KEY {
 	/*
 	 * we put special "control" keys in the "private" unicode plane,
 	 * allowing to encode any key as a simple int
+	 * -----
+	 * Ctrl をプライベートなUNICODEプレーン値に当てはめる
+	 * これによって, あらゆるキーを単純なint値として扱える
 	 *
 	 * certain function keys (tab, enter, delete... ) have unicode
 	 * character, but since we don't use them as "characters" we
 	 * put them in the private plane as well, shifted by 0x100000
+	 * -----
+	 * tab, enter, delete などの特殊キーもunicodeを持つが、midishでは
+	 * これらのキーを「文字」として使用しないのでプライベートな値を割りつける
+	 * その値は 0x100000 を追加した値
 	 */
 	TTY_KEY_BS = 0x100008,
 	TTY_KEY_TAB = 0x100009,
@@ -51,6 +58,7 @@ enum TTY_KEY {
 
 struct pollfd;
 
+// tty関連の操作
 struct tty_ops {
 	void (*draw)(void *);
 	void (*resize)(void *, int);
@@ -76,10 +84,13 @@ void tty_tendl(void);
 extern struct tty_ops *tty_ops;
 extern void *tty_arg;
 
+// ttyに表示されるelementの操作
 struct el_ops {
 	/*
 	 * Called for every character when a new line is entered,
 	 * including for \n and EOF.
+	 *
+	 * \nとEOFを含む新しい行が入力されたときに各文字に対して呼ばれる関数
 	 */
 	void (*onchar)(void *, int);
 
@@ -91,6 +102,8 @@ struct el_ops {
 	 * (by calling el_compladd() for each item) and return in the
 	 * extents of the sub-string being completed (for instance the
 	 * last component of the path).
+	 * 
+	 * TABキーを押したときに呼ばれる補完関数
 	 */
 	void (*oncompl)(void *, char *, int, int, int *, int *);
 };

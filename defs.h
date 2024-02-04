@@ -18,20 +18,28 @@
 #define MIDISH_DEFAULT_H
 
 /*
- * convert tempo (beats per minute) to tic length (number of 24-th of
- * microsecond)
+ * convert tempo (beats per minute) to tic length (number of 24-th of microsecond)
+ *
+ * テンポ（BPM）をticの長さに変換します。(24マイクロ秒の倍数)
+ * 60 / bpm / timebase
  */
 #define TEMPO_TO_USEC24(tempo,tpb) (60L * 24000000L / ((tempo) * (tpb)))
 
 /*
- * units for absolute postions, ie we use MTC_SEC units per second
- * this number mus be multiple of all supported quarter frame frequencies
+ * units for absolute positions, ie we use MTC_SEC units per second
+ * this number must be multiple of all supported quarter frame frequencies | TODO: fix typo mus->must
  * ie 96, 100, 120
+ *
+ * 絶対位置の単位 -> １秒間を何分割するか？の接待位置のことだろう(多分)
+ * MTC_SEC/秒 を使用する場合、この値はサポートされているすべての 1/4フレーム周波数の倍数でなければならない
+ * 96, 100, 120...
  */
 #define MTC_SEC		2400
 
 /*
  * MTC counters wrap every 24 hours
+ *
+ * 24時間ごとのMTCカウントラップ数
  */
 #define MTC_PERIOD	(24 * 60 * 60 * MTC_SEC)
 
@@ -93,7 +101,7 @@
 #define DEFAULT_MAXNCHUNKS	(DEFAULT_MAXNSYSEXS * 2)
 
 /*
- * default number of tics per beat
+ * default number of Tick Per Beat -> ４分音符一つを24分割 -> タイムベースの値
  */
 #define DEFAULT_TPB		24
 
@@ -103,12 +111,12 @@
 #define DEFAULT_BPM		4
 
 /*
- * default number of tic per unit note
+ * default number of Tic Per Unit note
  */
 #define DEFAULT_TPU		96
 
 /*
- * default tempo
+ * default tempo (BPM)
  */
 #define DEFAULT_TEMPO		120
 

@@ -20,9 +20,13 @@
 #include "str.h"
 
 /*
- * a name is an entry in a simple list of strings the string buffer is
- * owned by the name, so it need not to be allocated if name_xxx
- * routines are used
+ * En:
+ *   a name is an entry in a simple list of strings the string buffer is
+ *   owned by the name, so it need not to be allocated if name_xxx
+ *   routines are used
+ * Ja:
+ *   name は文字列バッファがnameによって所有されている文字列の単純なリスト内のエントリであるため
+ *   name_xxxルーチンを使用する場合は割り当てる必要はありません。
  */
 struct name {
 	char *str;

@@ -43,7 +43,7 @@ struct song;
 extern struct song *usong;
 extern unsigned mux_isopen;
 extern unsigned mux_manualstart;
-extern unsigned long mux_wallclock;
+extern unsigned long mux_wallclock; /* グローバルで参照される経過時間 */
 
 void song_startcb(struct song *);
 void song_stopcb(struct song *);

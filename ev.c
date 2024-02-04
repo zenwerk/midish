@@ -15,7 +15,7 @@
  */
 
 /*
- * ev is an "extended" midi event
+ * ev is an "extended" midi event | 独自拡張MIDI EVENT
  */
 
 #include "utils.h"
@@ -138,7 +138,7 @@ struct evinfo evinfo[EV_NUMCMD] =
 struct evctl evctl_tab[EV_MAXCOARSE + 1];
 
 /*
- * return the 'name' of the given event
+ * return the 'name' of the given event | 与えられたイベントの名前を返す
  */
 char *
 ev_getstr(struct ev *ev)
@@ -154,7 +154,8 @@ ev_getstr(struct ev *ev)
 }
 
 /*
- * find the event EV_XX constant corresponding to the given string
+ * find the event EV_XX constant corresponding to the given string.
+ * 与えられた文字列と一致する EV_XX定数を探す.
  */
 unsigned
 ev_str2cmd(struct ev *ev, char *str)
@@ -464,8 +465,8 @@ ev_map(struct ev *in, struct evspec *from, struct evspec *to, struct ev *out)
 }
 
 /*
- * find the EVSPEC_XX constant corresponding to
- * the given string
+ * find the EVSPEC_XX constant corresponding to the given string.
+ * 与えられた文字列と一致するEVSPEC_XX定数を探す.
  */
 unsigned
 evspec_str2cmd(struct evspec *ev, char *str)
@@ -952,6 +953,9 @@ evspec_map(struct evspec *in,
 /*
  * configure a controller (set the name and default value)
  */
+/*
+ * コントローラ設定関数 (名前とデフォルト値のセット)
+ */
 void
 evctl_conf(unsigned num, char *name, unsigned defval)
 {
@@ -1001,12 +1005,14 @@ evctl_lookup(char *name, unsigned *ret)
 
 /*
  * initialize the controller table
+ * コントローラーテーブルの初期化
  */
 void
 evctl_init(void)
 {
 	unsigned i;
 
+	/* evctlテーブルを初期化する */
 	for (i = 0; i < EV_MAXCOARSE + 1; i++) {
 		evctl_tab[i].name = NULL;
 		evctl_tab[i].defval = EV_UNDEF;

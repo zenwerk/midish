@@ -31,12 +31,22 @@
  *
  */
 
+/*
+ * statesは、midiノート、コントローラの最後の値、ベンダーの現在の値などのイベントを保持するために使用される構造体。
+ *
+ * ステートはリスト（statelist構造体）にリンクされており、リストにはMIDIストリームの完全な状態（つまり、すべてのMIDIノート、すべてのコントローラの状態など）が含まれている。
+ *
+ * statelist構造体はリアルタイム・フィルターで使用されるため、ステート・プールを使用する。
+ * 典型的なパフォーマンスでは、stateslistの最大長は最大MIDIノート数とほぼ等しく、平均リスト長は2〜3ステート、最大は10〜20ステートになる
+ * 現在は単一リンクリストを使用しているが、パフォーマンス上の理由から、将来的にはハッシュテーブルを使用する予定である。
+ */
+
 #include "utils.h"
 #include "pool.h"
 #include "state.h"
 
-struct pool state_pool;
-unsigned state_serial;
+struct pool state_pool; /* グローバルな state_pool */
+unsigned state_serial; /* stateを管理するグローバルなIDカウンタ */
 
 void
 state_pool_init(unsigned size)
@@ -94,7 +104,7 @@ state_log(struct state *s)
 }
 
 /*
- * copy an event into a state.
+ * copy an event into a state. | event を state にコピー
  */
 void
 state_copyev(struct state *st, struct ev *ev, unsigned ph)
@@ -105,9 +115,13 @@ state_copyev(struct state *st, struct ev *ev, unsigned ph)
 }
 
 /*
- * check if the given event matches the given frame (if so, this means
- * that, iether the event is part of the frame, either there is a
- * conflict between the frame and the event)
+ * En:
+ *   check if the given event matches the given frame (if so, this means
+ *   that, iether the event is part of the frame, either there is a | TODO: typo iether->either
+ *   conflict between the frame and the event)
+ * Ja:
+ *   引数ev が 与えられたframeにマッチするかチェックする.
+ *   つまりeventがframeの一部であるか、frameとeventの間に矛盾があるかのどちらであるかを意味する
  */
 unsigned
 state_match(struct state *st, struct ev *ev)
@@ -127,6 +141,7 @@ state_match(struct state *st, struct ev *ev)
 
 /*
  * check if the given state belongs to the event spec
+ * 引数st が引数spec に属するかチェックする
  */
 unsigned
 state_inspec(struct state *st, struct evspec *spec)

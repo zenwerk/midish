@@ -112,11 +112,17 @@ node_replace(struct node **n, struct node *e)
 
 
 /*
- * run a node.
- * the following rule must be respected
- * 1) node_exec must be called always with *r == NULL
- * 2) in statements (slist,...) *r != NULL if and only if RETURN
- * 3) in expressions (add, ...) *r == NULL if and only if ERROR
+ * En:
+ *    run a node.
+ *    the following rule must be respected
+ *    1) node_exec must be called always with *r == NULL
+ *    2) in statements (slist,...) *r != NULL if and only if RETURN
+ *    3) in expressions (add, ...) *r == NULL if and only if ERROR
+ * Ja:
+ *   構文木nodeを以下のルールで実行する
+ *   1) node_exec は *r == NULL で実行される
+ *   2) 式(slist, ..) *r != NULL / RETURN
+ *   3) 式(add, ..) *r == NULL / ERROR
  */
 unsigned
 node_exec(struct node *o, struct exec *x, struct data **r)

@@ -29,11 +29,25 @@
  *
  */
 
+/*
+ * struct track (*o) は events のリンクリスト.
+ * 各イベント(struct seqev) 以下の場合に作成される
+ *	- MIDIイベント (struct ev)
+ *	- イベントが演奏されるまえのtics数
+ *
+ * trackは最後のイベントの後、大量の空白を含むので
+ * end-of-trackイベントがリストの最後に来る
+ *
+ *	- 各clock tick はdeltaの開始位置をマークする
+ *	- 各MIDIイベント(struct ev) は delta tics の後に演奏される
+ *
+ */
+
 #include "utils.h"
-#include "pool.h"
+#include "pool.h" // struct pool と関数のプロトタイプ宣言
 #include "track.h"
 
-struct pool seqev_pool;
+struct pool seqev_pool; // foo_pool な変数はグローバル変数
 
 void
 seqev_pool_init(unsigned size)
@@ -69,7 +83,8 @@ seqev_dump(struct seqev *i)
 }
 
 /*
- * initialise the track
+ * En: initialise the track
+ * Ja: trackの初期化
  */
 void
 track_init(struct track *o)
@@ -129,7 +144,8 @@ track_isempty(struct track *o)
 }
 
 /*
- * remove trailing blank space
+ * En: remove trailing blank space
+ * Ja: 最後のイベントのdelta秒を0にする
  */
 void
 track_chomp(struct track *o)
@@ -138,7 +154,8 @@ track_chomp(struct track *o)
 }
 
 /*
- * shift the track origin forward
+ * En: shift the track origin forward
+ * Ja: trackの開始時間を ntics だけ前にずらす
  */
 void
 track_shift(struct track *o, unsigned ntics)
@@ -147,7 +164,7 @@ track_shift(struct track *o, unsigned ntics)
 }
 
 /*
- * swap contents of two tracks
+ * swap contents of two tracks | 二つのtrackのコンテンツを交換する
  */
 void
 track_swap(struct track *t1, struct track *t2)

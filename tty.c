@@ -59,11 +59,13 @@
 #define EL_PROMPTMAX	64
 #define EL_HISTMAX	200
 
+// char の双方向リスト
 struct textline {
 	struct textline *next, *prev;
 	char text[1];
 };
 
+// char の先頭と末尾のアドレスと文字数を保持する
 struct textbuf {
 	struct textline *head, *tail;
 	unsigned int count;
@@ -741,7 +743,7 @@ el_init(struct el_ops *ops, void *arg)
 	el_curline = NULL;
 	el_mode = EL_MODE_EDIT;
 
-	tty_ops = &el_tty_ops;
+	tty_ops = &el_tty_ops; // tty の描画系動作
 	tty_arg = NULL;
 }
 
@@ -752,12 +754,17 @@ el_done(void)
 	textbuf_done(&el_hist);
 }
 
+/*
+ * mdep.c の cons_init から呼ばれる
+ */
 int
 tty_init(void)
 {
+	// STD_IN/OUT がttyに紐づいているか
+	// isatty は unistd.h から
 	if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO))
-		return 0;
-	if (tcgetattr(STDIN_FILENO, &tty_tattr) < 0) {
+		return 0; // 紐づいてない
+	if (tcgetattr(STDIN_FILENO, &tty_tattr) < 0) { // tty情報を取得
 		log_perror("can't get tty attributes: tcgetattr");
 		return 0;
 	}

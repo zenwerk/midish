@@ -126,9 +126,9 @@ enum {
 	PARSE_FUNC_1, PARSE_FUNC_2,
 	PARSE_CALL, PARSE_CALL_1, PARSE_CALL_2,
 	PARSE_STMT,
-	PARSE_IF_1, PARSE_IF_2, PARSE_IF_3, PARSE_IF_4, 
-	PARSE_FOR_1, PARSE_FOR_2, PARSE_FOR_3, PARSE_FOR_4, 
-	PARSE_RET_1,		
+	PARSE_IF_1, PARSE_IF_2, PARSE_IF_3, PARSE_IF_4,
+	PARSE_FOR_1, PARSE_FOR_2, PARSE_FOR_3, PARSE_FOR_4,
+	PARSE_RET_1,
 	PARSE_LET_1, PARSE_LET_2,
 	PARSE_ENDL,
 	PARSE_SLIST, PARSE_SLIST_1, PARSE_SLIST_2,
@@ -234,7 +234,7 @@ char *parse_pstates[] = {
 unsigned first_expr[] =
 {
 	TOK_MINUS, TOK_EXCLAM, TOK_TILDE,
-	TOK_LPAR, TOK_DOLLAR, TOK_LBRACE, TOK_LBRACKET, 
+	TOK_LPAR, TOK_DOLLAR, TOK_LBRACE, TOK_LBRACKET,
 	TOK_IDENT, TOK_NUM, TOK_STRING, TOK_NIL, TOK_ELLIPSIS, 0
 };
 
@@ -256,7 +256,7 @@ lex_init(struct parse *l, char *filename,
 	l->tokarg = tokarg;
 	l->filename = filename;
 	l->line = 1;
-}	
+}
 
 void
 lex_done(struct parse *l)
@@ -367,11 +367,17 @@ lex_atol(struct parse *l)
 	return 1;
 }
 
+/*
+ * user_onchar から呼ばれている
+ * parse がパーサー構造体
+ * int c が入力文字
+ */
 void
 lex_handle(struct parse *l, int c)
 {
 	unsigned i;
 
+	// 改行
 	if (c == '\n')
 		l->line++;
 	for (;;) {

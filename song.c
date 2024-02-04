@@ -68,7 +68,7 @@ song_init(struct song *o)
 	/*
 	 * song parameters
 	 */
-	o->mode = 0;
+	o->mode = 0; /* 初期価時は 0 */
 	o->trklist = NULL;
 	o->chanlist = NULL;
 	o->filtlist = NULL;
@@ -1149,8 +1149,9 @@ song_movecb(struct song *o)
 	mux_flush();
 }
 
-/*
+/**
  * call-back called when a midi event arrives
+ * MIDIイベント受信時のコールバック関数 for song構造体
  */
 void
 song_evcb(struct song *o, struct ev *ev)
@@ -1204,8 +1205,9 @@ song_evcb(struct song *o, struct ev *ev)
 		nev = 1;
 	}
 
-	/*
+	/**
 	 * output and/or record resulting events
+	 * 出力と録音(記録)をここで行う
 	 */
 	ev = filtout;
 	for (i = 0; i < nev; i++) {
@@ -1509,7 +1511,7 @@ song_gotocb(struct song *o, int how, unsigned where)
 }
 
 /*
- * set the current mode
+ * set the current mode | ILDE < PLAY < REC
  */
 void
 song_setmode(struct song *o, unsigned newmode)
@@ -1519,16 +1521,16 @@ song_setmode(struct song *o, unsigned newmode)
 
 	oldmode = o->mode;
 	o->mode = newmode;
-	if (oldmode >= SONG_PLAY) {
+	if (oldmode >= SONG_PLAY) { /* PLAY or RECORD */
 		mux_stopreq();
 	}
-	if (newmode < oldmode)
+	if (newmode < oldmode)                             /* REC -> PLAY || PLAY -> IDLE */
 		metro_setmode(&o->metro, newmode);
-	if (oldmode >= SONG_REC && newmode < SONG_REC)
+	if (oldmode >= SONG_REC && newmode < SONG_REC)     /* REC -> PLAY or IDLE */
 		song_mergerec(o);
-	if (oldmode >= SONG_PLAY && newmode < SONG_PLAY)
+	if (oldmode >= SONG_PLAY && newmode < SONG_PLAY)   /* PLAY or REC -> IDLE */
 		song_loop_done(o);
-	if (oldmode >= SONG_IDLE && newmode < SONG_IDLE) {
+	if (oldmode >= SONG_IDLE && newmode < SONG_IDLE) { /* IDLE or PLAY or REC -> STOP */
 		/*
 		 * cancel and free states
 		 */
@@ -1549,12 +1551,12 @@ song_setmode(struct song *o, unsigned newmode)
 		mux_flush();
 		mux_close();
 	}
-	if (oldmode < SONG_PLAY && newmode >= SONG_PLAY) {
+	if (oldmode < SONG_PLAY && newmode >= SONG_PLAY) { /* IDLE -> PLAY or REC */
 		o->tap_cnt = 0;
 		o->complete = 0;
 		song_loop_init(o);
 	}
-	if (oldmode < SONG_IDLE && newmode >= SONG_IDLE) {
+	if (oldmode < SONG_IDLE && newmode >= SONG_IDLE) { /* STOP -> IDLE or PLAY or REC */
 		o->abspos = 0;
 		o->measure = 0;
 		o->beat = 0;
@@ -1572,7 +1574,7 @@ song_setmode(struct song *o, unsigned newmode)
 		statelist_init(&o->rec_replay);
 		statelist_init(&o->rec_input);
 
-		mux_open();
+		mux_open(); /* マルチプレクサを開く */
 		mux_chgticrate(o->tics_per_unit);
 
 		/*
@@ -1633,8 +1635,9 @@ song_stop(struct song *o)
 	cons_putpos(o->curpos, 0, 0);
 }
 
-/*
- * play the song initialize the midi/timer and start the event loop
+/**
+ * - play the song initialize the midi/timer and start the event loop
+ * - midi/timer の初期化と event loop の開始
  */
 void
 song_play(struct song *o)

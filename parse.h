@@ -55,11 +55,12 @@ struct pst {
 	struct node **pnode;	/* backup of node */
 };
 
+// レキサーとパーサーがまとまっている
 struct parse {
 	/*
 	 * lexical analyser
 	 */
-	unsigned lstate;
+	unsigned lstate; // lexer の状態
 	unsigned base;
 	unsigned opindex;
 	unsigned used;

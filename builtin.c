@@ -981,6 +981,7 @@ blt_idle(struct exec *o, struct data **r)
 	return 1;
 }
 
+/* 演奏開始関数 | シーケンサー機能の開始はここからか? */
 unsigned
 blt_play(struct exec *o, struct data **r)
 {
@@ -3442,6 +3443,7 @@ blt_dlist(struct exec *o, struct data **r)
 	return 1;
 }
 
+/* 新しいデバイスを追加するビルトイン関数 */
 unsigned
 blt_dnew(struct exec *o, struct data **r)
 {

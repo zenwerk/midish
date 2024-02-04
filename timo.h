@@ -17,11 +17,14 @@
 #ifndef MIDISH_TIMO_H
 #define MIDISH_TIMO_H
 
+/**
+ * timo は TImeOut を表す
+ */
 struct timo {
 	struct timo *next;
-	unsigned val;			/* time to wait before the callback */
-	unsigned set;			/* true if the timeout is set */
-	void (*cb)(void *arg);		/* routine to call on expiration */
+	unsigned val;			/* time to wait before the callback  | callback呼び出しの前に待つ時間 */
+	unsigned set;			/* true if the timeout is set        | timeout がセットされていたら true */
+	void (*cb)(void *arg);		/* routine to call on expiration | timeout時に呼ぶコールバック */
 	void *arg;			/* argument to give to 'cb' */
 };
 

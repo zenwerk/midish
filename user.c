@@ -42,9 +42,12 @@
 #include "saveload.h"
 
 struct song *usong;
-unsigned user_flag_batch = 0;
-unsigned user_flag_verb = 0;
+unsigned user_flag_batch = 0; /* batch実行モード */
+unsigned user_flag_verb = 0; /* 冗長モード */
 
+/*
+ * `cb` は `callback` の意味だろう
+ */
 void
 exec_cb(struct exec *e, struct node *root)
 {
@@ -69,16 +72,19 @@ exec_cb(struct exec *e, struct node *root)
 }
 
 /*
- * execute the script in the given file inside the 'exec' environment.
- * the script has acces to all global variables, but not to the local
- * variables of the calling proc. Thus it can be safely used from a
- * procedure
+ * En:
+ *   execute the script in the given file inside the 'exec' environment.
+ *   the script has acces to all global variables, but not to the local | TODO: typo acces->access
+ *   variables of the calling proc. Thus it can be safely used from a
+ *   procedure
+ * Ja:
+ *   script はグローバル変数にアクセス可能. proc内のローカル変数にはアクセス不可
  */
 unsigned
 exec_runfile(struct exec *exec, char *filename)
 {
 	struct parse parse;
-	struct textin *in;
+	struct textin *in; /* テキスト入力を表す構造体 */
 	struct name **locals;
 	int c;
 
@@ -817,11 +823,12 @@ data_getctl(struct data *d, unsigned *num)
 	return 1;
 }
 
-static struct parse parse;
-static struct exec *exec;
-static unsigned exitcode;
-int done = 0;
+static struct parse parse; /* global なパーサー構造体 */
+static struct exec *exec;  /* global なインタプリタ構造体 */
+static unsigned exitcode;  /* (global) 終了コード */
+int done = 0; /* global な実行完了フラグ */
 
+/* el_ops に登録される関数 */
 void
 user_onchar(void *arg, int c)
 {
@@ -922,28 +929,29 @@ struct el_ops user_el_ops = {
 	user_oncompl
 };
 
+// main() から呼ばれる Midish の処理のメインループ開始関数
 unsigned
 user_mainloop(void)
 {
-	cons_init(&user_el_ops, NULL);
-	textio_init();
-	evctl_init();
+	cons_init(&user_el_ops, NULL); // console init
+	textio_init(); // テキスト入出力チャンネルの初期化
+	evctl_init(); // evctl_tbl の初期化(デフォルト値代入)
+	// pool という構造体を用途別に初期化
 	seqev_pool_init(DEFAULT_MAXNSEQEVS);
 	state_pool_init(DEFAULT_MAXNSTATES);
 	chunk_pool_init(DEFAULT_MAXNCHUNKS);
 	sysex_pool_init(DEFAULT_MAXNSYSEXS);
 	seqptr_pool_init(DEFAULT_MAXNSEQPTRS);
 
-	/*
-	 * create the project (ie the song) and
-	 * the execution environment of the interpreter
+	/**
+	 * Midishプロジェクト(song構造体)の作成と, インタプリタ実行環境の準備.
 	 */
-	mididev_listinit();
-	usong = song_new();
-	exec = exec_new();
+	mididev_listinit(); // null初期化
+	usong = song_new(); // null初期化したsong構造体を返す
+	exec = exec_new(); // インタプリタ本体を初期化して返す
 
 	/*
-	 * register built-in functions
+	 * Midish のビルトイン関数の登録
 	 */
 	exec_newbuiltin(exec, "print", blt_print,
 			name_newarg("...", NULL));
@@ -1228,6 +1236,7 @@ user_mainloop(void)
 
 	/*
 	 * run the user startup script: $HOME/.midishrc or /etc/midishrc
+	 * .midishrc を読み込んで初期設定を行う
 	 */
 	if (!user_flag_batch) {
 		exec_runrcfile(exec);
@@ -1237,17 +1246,21 @@ user_mainloop(void)
 
 	/*
 	 * create the parser and start parsing standard input
+	 * パーサーを開始しSTDINの入力を解析する
 	 */
 	parse_init(&parse, exec, exec_cb);
 	lex_init(&parse, "stdin", parse_cb, &parse);
 
+        // Console の初期準備
 	cons_ready();
 	cons_putpos(usong->curpos, 0, 0);
 
+	// XXX: [2] 実際のメインループ処理の開始地点がここ
 	done = 0;
 	while (!done && mux_mdep_wait(1))
 		; /* nothing */
 
+	/*** 終了処理 ***/
 	lex_done(&parse);
 	parse_done(&parse);
 	exec_delete(exec);

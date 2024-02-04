@@ -39,6 +39,12 @@ struct pollfd;
 struct mididev;
 struct ev;
 
+/**
+ * MIDIデバイスオペレーションズ
+ * alsa/raw/sndio でそれぞれの固有のAPIをこの構造体で抽象化する
+ * DEFINE のコンパイルスイッチで {alsa,raw,sndio}_new でdevopsを返す
+ * mididev構造体はdevopsを通じてMIDI機器に命令を送受信する
+ */
 struct devops {
 	/*
 	 * open the device or set the ``eof'' flag on error
@@ -55,18 +61,24 @@ struct devops {
 	 */
 	unsigned (*write)(struct mididev *, unsigned char *, unsigned);
 	/*
-	 * return the number of pollfd structures the device requires
+	 * En: return the number of pollfd structures the device requires
+	 * Ja: デバイスが必要とする pollfd構造体の数を返す
 	 */
 	unsigned (*nfds)(struct mididev *);
 	/*
-	 * fill the given array of pollfd structures with the given
-	 * events so that poll(2) can be called, return the number of
-	 * elements filled
+	 * En:
+	 *   fill the given array of pollfd structures with the given
+	 *   events so that poll(2) can be called, return the number of
+	 *   elements filled
+	 * Ja:
+	 *   poll(2) を呼び出すことができるように
+	 *   "イベントを指定したPollfd構造体"の配列を埋める|埋めた数を返す
 	 */
 	unsigned (*pollfd)(struct mididev *, struct pollfd *, int);
 	/*
 	 * return the events set in the array of pollfd structures set
 	 * by the poll(2) syscall
+	 * poll-syscall でセットされたpollfd構造体の配列に設定されたevent達を返す
 	 */
 	int (*revents)(struct mididev *, struct pollfd *);
 	/*
@@ -79,11 +91,12 @@ struct devops {
 	void (*del)(struct mididev *);
 };
 
-/*
+/**
  * private structure for the MTC messages parser
+ * MTC とは Midi Time Code のこと
  */
 struct mtc {
-	unsigned char nibble[8];	/* nibbles of hr:min:sec:fr */
+	unsigned char nibble[8];	/* nibbles(1/2byte=4bit) of hr:min:sec:fr */
 	unsigned qfr;			/* quarter frame counter */
 	unsigned tps;			/* ticks per second */
 	unsigned pos;			/* absolute tick */
@@ -94,6 +107,9 @@ struct mtc {
 	unsigned timo;
 };
 
+/**
+ * Midi device を表す構造体
+ */
 struct mididev {
 	struct devops *ops;
 
@@ -106,10 +122,10 @@ struct mididev {
 	/*
 	 * device settings
 	 */
-	unsigned unit;			/* index in the mididev table */
+	unsigned unit;			/* index in the mididev table | mididevテーブルインデクス */
 	unsigned ticrate, ticdelta;	/* tick rate (default 96) */
 	unsigned sendclk;		/* send MIDI clock */
-	unsigned sendmmc;		/* send MMC start/stop/relocate */
+	unsigned sendmmc;		/* send MMC start/stop/relocate | MMC = Midi Machine Control */
 	unsigned isensto, osensto;	/* active sensing timeouts */
 	unsigned mode;			/* read, write */
 	unsigned ixctlset, oxctlset;	/* bitmap of 14bit controllers */

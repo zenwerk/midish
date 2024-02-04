@@ -124,7 +124,7 @@ conv_getctx(struct statelist *slist, struct ev *ev, unsigned hi, unsigned lo)
 	return vlo + (vhi << 7);
 }
 
-/*
+/**
  * convert an old-style event (ie CTL, PC) to a context-free event (ie
  * XCTL, NRPN, RPN, XPC). If an event is available, 'rev' parameter is
  * filled and 1 is returned.
