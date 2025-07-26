@@ -556,6 +556,16 @@ el_onkey(void *arg, int key)
 		max = el_used;
 		el_replace(el_curs, el_curs + 1, NULL, 0);
 		el_refresh(el_curs, max);
+	} else if (key == (TTY_KEY_CTRL | 'W')) {
+		el_setmode(EL_MODE_EDIT);
+		max = el_used;
+		endpos = el_curs;
+		while (el_curs > 0 && el_buf[el_curs - 1] == ' ')
+			el_curs--;
+		while (el_curs > 0 && el_buf[el_curs - 1] != ' ')
+			el_curs--;
+		el_replace(el_curs, endpos, NULL, 0);
+		el_refresh(el_curs, max);
 	} else if (key == TTY_KEY_BS || key == (TTY_KEY_CTRL | 'H')) {
 		if (el_mode == EL_MODE_COMPL) {
 			el_selstart = el_curs;
@@ -615,6 +625,11 @@ el_onkey(void *arg, int key)
 		endpos = el_used;
 		el_used = el_curs;
 		el_refresh(el_curs, endpos);
+	} else if (key == (TTY_KEY_CTRL | 'U')) {
+		el_setmode(EL_MODE_EDIT);
+		endpos = el_used;
+		el_used = el_curs = 0;
+		el_refresh(0, endpos);
 	} else if (key == TTY_KEY_UP || key == (TTY_KEY_CTRL | 'P')) {
 		el_setmode(EL_MODE_EDIT);
 		if (el_curline != el_hist.head) {
@@ -662,6 +677,7 @@ el_onkey(void *arg, int key)
 			el_setmode(EL_MODE_EDIT);
 		}
 	} else if (key == (TTY_KEY_CTRL | 'L')) {
+		tty_tclrscr();
 		el_resize(NULL, tty_twidth);
 	} else if (key == (TTY_KEY_CTRL | 'G')) {
 		if (el_mode != EL_MODE_EDIT)
@@ -944,16 +960,6 @@ tty_oninput(unsigned int c)
 				return;
 			} else {
 				switch (c) {
-				case 'O':
-				case 'N':
-					/*
-					 * SS2 and SS3 are supposed to
-					 * have no modifiers, and to
-					 * be terminated by the next
-					 * char. As in 2015 certain
-					 * terminals use modifiers, we
-					 * treat these as CSI
-					 */
 				case '[':
 					tty_tstate = TTY_TSTATE_CSI;
 					tty_escbuf[0] = 0x1b;
@@ -961,6 +967,17 @@ tty_oninput(unsigned int c)
 					tty_nescpar = 0;
 					break;
 				default:
+					if (c == '@' || (c >= 'A' && c <= 'Z')) {
+					alt_key:
+						key = c | TTY_KEY_ALT;
+						tty_ops->onkey(tty_arg, key);
+						tty_tstate = TTY_TSTATE_ANY;
+						return;
+					}
+					if (c >= 'a' && c <= 'z') {
+						c -= 'a' - 'A';
+						goto alt_key;
+					}
 					tty_tstate = TTY_TSTATE_ERROR;
 				}
 			}
@@ -1136,6 +1153,13 @@ void
 tty_tclear(void)
 {
 	tty_toutput("\r\x1b[K", 4);
+	tty_tcursx = 0;
+}
+
+void
+tty_tclrscr(void)
+{
+	tty_toutput("\x1b[H\x1b[J", 6);
 	tty_tcursx = 0;
 }
 

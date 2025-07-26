@@ -59,7 +59,7 @@
 #define MIDI_BUFSIZE	1024
 #define MAXFDS		(DEFAULT_MAXNDEVS + 1)
 
-volatile sig_atomic_t cons_quit = 0, resize_flag = 0, cont_flag = 0; /* signal がアトミックに操作できる整数変数 */
+volatile sig_atomic_t cons_quit = 0, resize_flag = 0, cont_flag = 0, usr1_flag = 0; /* signal がアトミックに操作できる整数変数 */
 struct timespec ts, /* 現在時刻 */ ts_last; /* 最後のタイマー呼び出し時間 */
 
 int cons_eof, cons_isatty;
@@ -102,6 +102,12 @@ void
 mdep_sigcont(int s)
 {
 	cont_flag = 1;
+}
+
+void
+mdep_sigusr1(int s)
+{
+	usr1_flag = 1;
 }
 
 /**
@@ -199,22 +205,7 @@ mux_mdep_wait(int docons)
 			nfds++;
 		}
 	} else
-		tty_pfds = NULL; /* tty は監視しない */
-
-	/** MIDIデバイスの pollfd の設定処理 **/
-	for (dev = mididev_list; dev != NULL; dev = dev->next) {
-		/* 入力機器ではない || eof-error happened */
-		if (!(dev->mode & MIDIDEV_MODE_IN) || dev->eof) {
-			dev->pfd = NULL; /* pollfd を設定する必要なし */
-			continue;
-		}
-		/* 入力機器である */
-		pfd = &pfds[nfds];
-		nfds += dev->ops->pollfd(dev, pfd, POLLIN);
-		dev->pfd = pfd;
-	}
-
-	/** console 関連処理 **/
+		tty_pfds = NULL;
 	if (cons_quit) {
 		fprintf(stderr, "\n--interrupt--\n");
 		cons_quit = 0;
@@ -233,6 +224,28 @@ mux_mdep_wait(int docons)
 			tty_reset();
 	}
 
+	if (usr1_flag) {
+		usr1_flag = 0;
+		for (dev = mididev_list; dev != NULL; dev = dev->next) {
+			if (dev->eof) {
+				mididev_close(dev);
+				mididev_open(dev);
+				if (!dev->eof) {
+					log_puti(dev->unit);
+					log_puts(": device reopened\n");
+				}
+			}
+		}
+	}
+	for (dev = mididev_list; dev != NULL; dev = dev->next) {
+		if (!(dev->mode & MIDIDEV_MODE_IN) || dev->eof) {
+			dev->pfd = NULL;
+			continue;
+		}
+		pfd = &pfds[nfds];
+		nfds += dev->ops->pollfd(dev, pfd, POLLIN);
+		dev->pfd = pfd;
+	}
 	/** ポーリング開始 **/
 	res = poll(pfds, nfds, -1);
 
@@ -429,6 +442,11 @@ cons_init(struct el_ops *el_ops, void *el_arg)
 		log_perror("cons_mdep_init: sigaction(cont) failed");
 		exit(1);
 	}
+	sa.sa_handler = mdep_sigusr1;
+	if (sigaction(SIGUSR1, &sa, NULL) < 0) {
+		log_perror("cons_mdep_init: sigaction(usr1) failed");
+		exit(1);
+	}
 
 	// グローバル変数と tty_init
 	if (!user_flag_batch && !user_flag_verb && tty_init()) {
@@ -462,6 +480,10 @@ cons_done(void)
 	}
 	if (sigaction(SIGCONT, &sa, NULL) < 0) {
 		log_perror("cons_mdep_done: sigaction(cont)");
+		exit(1);
+	}
+	if (sigaction(SIGUSR1, &sa, NULL) < 0) {
+		log_perror("cons_mdep_done: sigaction(usr1)");
 		exit(1);
 	}
 }
