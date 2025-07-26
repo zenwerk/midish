@@ -25,6 +25,7 @@ struct name;
 /*
  * the following represents a "value" for the interpreter. all types
  * use the same strucure
+ * data はインタプリタで使用される value を表します。すべての値が同じ構造体を使用する.
  */
 struct data {
 #define DATA_NIL	0

@@ -13,77 +13,6 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-/*
- * A simple LL(1)-like parser for the followingi grammar:
- *
- * endl:	"\n"
- * 		";"
- *
- * cst:		num
- * 		string
- * 		ident
- * 		nil
- * 		"$" ident
- * 		"[" call "]"
- * 		"(" expr ")"
- * 		"{" [ expr expr ...  expr ] "}"
- *
- * unary:	"-" unary
- * 		"~" unary
- * 		"!" unary
- * 		cst
- *
- * muldiv:	unary "*" unary
- * 		unary "/" unary
- * 		unary "%" unary
- *
- * addsub:	muldiv "+" muldiv
- * 		muldiv "-" muldiv
- *
- * shift:	addsub "<<" addsub
- * 		addsub ">>" addsub
- *
- * compare:	shift "<" shift
- * 		shift ">" shift
- * 		shift "<=" shift
- * 		shift ">=" shift
- *
- * equal:	compare "==" compare
- * 		compare "!=" compare
- *
- * bitand:	equal "&" equal
- *
- * bitxor:	bitand "^" bitand
- *
- * bitor:	bitxor "|" bitxor
- *
- * and:		bitor "&&" bitor
- *
- * or:		and "||" and
- *
- * range:	or ".." or
- *
- * expr:	or
- *
- * call:	ident [ expr expr ... expr ]
- *
- * stmt:	"let" ident "=" expr endl
- * 		"for" ident "in" expr slist
- * 		"if" expr slist [ else slist ]
- * 		"for" ident "in" expr slist
- * 		"return" expr
- * 		call endl
- * 		endl
- *
- * slist:	"{" [ stmt stmt ... stmt ] "}"
- *
- * proc:	"proc" ident [ ident ident ... ident ] slist
- *
- * line:	proc
- * 		stmt
- *
- * prog:	[ line line ... line ] EOF
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -137,7 +66,7 @@ enum {
 	PARSE_ERROR
 };
 
-unsigned parse_debug = 0;
+unsigned parse_debug = 1;
 
 struct tokname {
 	unsigned id;		/* token id */
@@ -553,6 +482,77 @@ tok_is(unsigned id, unsigned *set)
 	return 0;
 }
 
+/*******************************************************
+ * A simple LL(1)-like parser for the following grammar:
+ *
+ * prog: [ line line ... line ] EOF
+ *
+ * line: proc
+ * 		 | stmt
+ *
+ * proc: "proc" ident [ ident ident ... ident ] slist
+ *
+ * slist:	"{" [ stmt stmt ... stmt ] "}"
+ *
+ * stmt: "let" ident "=" expr endl
+ *     | "for" ident "in" expr slist
+ *     | "if" expr slist [ else slist ]
+ *     | "return" expr
+ *     | call endl
+ *     | endl
+ *
+ * call: ident [ expr expr ... expr ]
+ *
+ * expr: or
+ *
+ * range:	or ".." or
+ *
+ * or:     and "||" and
+ *
+ * and:    bitor "&&" bitor
+ *
+ * bitor:  bitxor "|" bitxor
+ *
+ * bitxor: bitand "^" bitand
+ *
+ * bitand: equal "&" equal
+ *
+ * equal: compare "==" compare
+ *      | compare "!=" compare
+ *
+ * compare:	shift "<" shift
+ *        | shift ">" shift
+ *        | shift "<=" shift
+ *        | shift ">=" shift
+ *
+ * shift: addsub "<<" addsub
+ *      | addsub ">>" addsub
+ *
+ * addsub: muldiv "+" muldiv
+ *       | muldiv "-" muldiv
+ *
+ * muldiv: unary "*" unary
+ *       | unary "/" unary
+ *       | unary "%" unary
+ *
+ * unary: "-" unary
+ *      | "~" unary
+ *      | "!" unary
+ *      | cst
+ *
+ * cst: num
+ *    | string
+ *    | ident
+ *    | nil
+ *    | "$" ident
+ *    | "[" call "]"
+ *    | "(" expr ")"
+ *    | "{" [ expr expr ...  expr ] "}"
+ *
+ * endl: "\n"
+ *     | ";"
+ */
+
 /*
  * initialize the parser
  */
@@ -578,8 +578,8 @@ parse_done(struct parse *p)
 }
 
 /*
- * push the current pstate in the stack and
- * switch to the given pstate
+ * push the current pstate in the stack and * switch to the given pstate
+ * 現在の状態をスタックにプッシュし、指定された状態に切り替える。
  */
 void
 parse_begin(struct parse *p, unsigned newpstate, struct node **newpnode)
@@ -595,7 +595,25 @@ parse_begin(struct parse *p, unsigned newpstate, struct node **newpnode)
 void
 parse_end(struct parse *p)
 {
+  //char sprint[100] = {0};
+  //if (parse_debug && p->sp->pnode != NULL && p->sp->pnode != (void *)0xdeadbeef) {
+  //  sprintf(sprint, "%p:", (void*)p->sp->pnode);
+  //  log_puts(sprint);
+  //  node_log(*p->sp->pnode, 0);
+  //}
+
+  //log_puts("p_end:");
+  //log_puts(parse_pstates[p->sp->pstate]);
+  //log_puts("->");
 	p->sp--;
+  //log_puts(parse_pstates[p->sp->pstate]);
+  //log_puts("\n");
+
+  //if (parse_debug && p->sp->pnode != NULL && p->sp->pnode != (void *)0xdeadbeef) {
+  //  sprintf(sprint, "%p:", (void*)p->sp->pnode);
+  //  log_puts(sprint);
+  //  node_log(*p->sp->pnode, 0);
+  //}
 }
 
 /*
@@ -626,7 +644,8 @@ parse_found(struct parse *p)
 }
 
 /*
- * process the given token
+ * process the given token.
+ * パーサがトークンを処理するためのコールバック関数.
  */
 void
 parse_cb(void *arg, unsigned id, unsigned long val)
@@ -634,32 +653,50 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 	struct parse *p = (struct parse *)arg;
 	struct node_vmt *vmt;
 	struct data *args;
-	struct pst *sp;
+	struct pst *sp; /* スタックポインタ */
 
 	if (parse_debug) {
 		lex_toklog(id, val);
 		log_puts("\n");
 	}
 
+  /**
+   * ループ中の id = 0 はトークンを消費(consume)することを示す.
+   * caseの先頭でid = 0の場合は、前の状態でトークンが消費済みであることを示すので return して次のトークンを待つ
+   */
+#define CONSUME do { id = 0; } while (0)
+#define CONSUMED (id == 0)
 	for (;;) {
+    int depth = 0;
 		if (parse_debug) {
-			for (sp = p->stack; sp != p->sp; sp++)
-				log_puts(".  ");
+			for (sp = p->stack; sp != p->sp; sp++) {
+        log_puts(".  ");
+        depth++;
+      }
 			log_puts(parse_pstates[sp->pstate]);
 			log_puts("\n");
 		}
+
 		if (id == TOK_ERR) {
 			parse_err(p, NULL);
-			id = 0;
+			CONSUME;
 		}
+
 		sp = p->sp;
+//    char sprint[100] = {0};
+//    if (parse_debug && sp->pnode != NULL && sp->pnode != (void *)0xdeadbeef) {
+//      sprintf(sprint, "sp[%d]", depth);
+//      log_puts(sprint);
+//      node_log(*sp->pnode, 0);
+//    }
+
 		switch (sp->pstate) {
 		case PARSE_RANGE:
 			sp->pstate = PARSE_RANGE_1;
 			parse_begin(p, PARSE_OR, sp->pnode);
 			break;
 		case PARSE_RANGE_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_RANGE) {
 				vmt = &node_vmt_range;
@@ -667,16 +704,20 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME;
 			node_replace(sp->pnode, node_new(vmt, NULL));
 			parse_begin(p, PARSE_OR, &(*sp->pnode)->list->next);
 			break;
+    /*
+     * 式(expr)の構文解析はここから
+     * START or: and "||" and
+     */
 		case PARSE_OR:
 			sp->pstate = PARSE_OR_1;
 			parse_begin(p, PARSE_AND, sp->pnode);
 			break;
 		case PARSE_OR_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_OR) {
 				vmt = &node_vmt_or;
@@ -684,16 +725,19 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME;
 			node_replace(sp->pnode, node_new(vmt, NULL));
 			parse_begin(p, PARSE_AND, &(*sp->pnode)->list->next);
 			break;
+    /*
+     * START and: bitor "&&" bitor
+     */
 		case PARSE_AND:
 			sp->pstate = PARSE_AND_1;
 			parse_begin(p, PARSE_BITOR, sp->pnode);
 			break;
 		case PARSE_AND_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_AND) {
 				vmt = &node_vmt_and;
@@ -701,7 +745,7 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME;
 			node_replace(sp->pnode, node_new(vmt, NULL));
 			parse_begin(p, PARSE_BITOR, &(*sp->pnode)->list->next);
 			break;
@@ -710,7 +754,7 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 			parse_begin(p, PARSE_BITXOR, sp->pnode);
 			break;
 		case PARSE_BITOR_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_BITOR) {
 				vmt = &node_vmt_bitor;
@@ -718,7 +762,7 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME;
 			node_replace(sp->pnode, node_new(vmt, NULL));
 			parse_begin(p, PARSE_BITXOR, &(*sp->pnode)->list->next);
 			break;
@@ -727,7 +771,7 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 			parse_begin(p, PARSE_BITAND, sp->pnode);
 			break;
 		case PARSE_BITXOR_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_BITXOR) {
 				vmt = &node_vmt_bitxor;
@@ -735,7 +779,7 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME;
 			node_replace(sp->pnode, node_new(vmt, NULL));
 			parse_begin(p, PARSE_BITAND, &(*sp->pnode)->list->next);
 			break;
@@ -744,7 +788,7 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 			parse_begin(p, PARSE_EQ, sp->pnode);
 			break;
 		case PARSE_BITAND_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_BITAND) {
 				vmt = &node_vmt_bitand;
@@ -752,16 +796,19 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME;
 			node_replace(sp->pnode, node_new(vmt, NULL));
 			parse_begin(p, PARSE_EQ, &(*sp->pnode)->list->next);
 			break;
+    /*
+     * START eq: cmp "==" cmp | cmp "!=" cmp
+     */
 		case PARSE_EQ:
 			sp->pstate = PARSE_EQ_1;
 			parse_begin(p, PARSE_CMP, sp->pnode);
 			break;
 		case PARSE_EQ_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_EQ) {
 				vmt = &node_vmt_eq;
@@ -771,16 +818,19 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME;
 			node_replace(sp->pnode, node_new(vmt, NULL));
 			parse_begin(p, PARSE_CMP, &(*sp->pnode)->list->next);
 			break;
+    /*
+     * START cmp: shift "<" shift | shift ">" shift | shift "<=" shift | shift ">=" shift
+     */
 		case PARSE_CMP:
 			sp->pstate = PARSE_CMP_1;
 			parse_begin(p, PARSE_SHIFT, sp->pnode);
 			break;
 		case PARSE_CMP_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_LT) {
 				vmt = &node_vmt_lt;
@@ -794,16 +844,19 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME;
 			node_replace(sp->pnode, node_new(vmt, NULL));
 			parse_begin(p, PARSE_SHIFT, &(*sp->pnode)->list->next);
 			break;
+    /*
+     * START shift: addsub "<<" addsub | addsub ">>" addsub
+     */
 		case PARSE_SHIFT:
 			sp->pstate = PARSE_SHIFT_1;
 			parse_begin(p, PARSE_SUB, sp->pnode);
 			break;
 		case PARSE_SHIFT_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_LSHIFT) {
 				vmt = &node_vmt_lshift;
@@ -813,16 +866,19 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME;
 			node_replace(sp->pnode, node_new(vmt, NULL));
 			parse_begin(p, PARSE_SUB, &(*sp->pnode)->list->next);
 			break;
+    /*
+     * START addsub: muldiv ("-" muldiv | "+" muldiv)*
+     */
 		case PARSE_SUB:
 			sp->pstate = PARSE_SUB_1;
 			parse_begin(p, PARSE_DIV, sp->pnode);
 			break;
 		case PARSE_SUB_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_MINUS) {
 				vmt = &node_vmt_sub;
@@ -832,16 +888,19 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME;
 			node_replace(sp->pnode, node_new(vmt, NULL));
 			parse_begin(p, PARSE_DIV, &(*sp->pnode)->list->next);
 			break;
+    /*
+     * START div: muldiv "/" muldiv | muldiv "*" muldiv | muldiv "%" muldiv
+     */
 		case PARSE_DIV:
 			sp->pstate = PARSE_DIV_1;
 			parse_begin(p, PARSE_UN, sp->pnode);
 			break;
 		case PARSE_DIV_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_SLASH) {
 				vmt = &node_vmt_div;
@@ -853,12 +912,15 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME;
 			node_replace(sp->pnode, node_new(vmt, NULL));
 			parse_begin(p, PARSE_UN, &(*sp->pnode)->list->next);
 			break;
+    /*
+     * START unary: "-" unary | "!" unary | "~" unary | cst
+     */
 		case PARSE_UN:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_MINUS) {
 				vmt = &node_vmt_neg;
@@ -870,32 +932,30 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				sp->pstate = PARSE_CST;
 				break;
 			}
-			id = 0;
+			CONSUME;
 			*sp->pnode = node_new(vmt, NULL);
 			sp->pnode = &(*sp->pnode)->list;
 			break;
+    /*
+     * START cst: num | string | ident | "..." | "nil" | "(" expr ")" | "$" ident | "[" expr ... "]"
+     */
 		case PARSE_CST:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_NUM) {
-				*sp->pnode = node_new(&node_vmt_cst,
-					data_newlong(val));
+				*sp->pnode = node_new(&node_vmt_cst, data_newlong(val));
 				parse_end(p);
 			} else if (id == TOK_STRING) {
-				*sp->pnode = node_new(&node_vmt_cst,
-					data_newstring((char *)val));
+				*sp->pnode = node_new(&node_vmt_cst, data_newstring((char *)val));
 				parse_end(p);
 			} else if (id == TOK_IDENT) {
-				*sp->pnode = node_new(&node_vmt_cst,
-					data_newref((char *)val));
+				*sp->pnode = node_new(&node_vmt_cst, data_newref((char *)val));
 				parse_end(p);
 			} else if (id == TOK_ELLIPSIS) {
-				*sp->pnode = node_new(&node_vmt_var,
-					data_newref((char *)"..."));
+				*sp->pnode = node_new(&node_vmt_var, data_newref((char *)"..."));
 				parse_end(p);
 			} else if (id == TOK_NIL) {
-				*sp->pnode = node_new(&node_vmt_cst,
-					data_newnil());
+				*sp->pnode = node_new(&node_vmt_cst, data_newnil());
 				parse_end(p);
 			} else if (id == TOK_LPAR) {
 				sp->pstate = PARSE_PAR_1;
@@ -911,10 +971,13 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_err(p, "value or ``('' expected");
 				break;
 			}
-			id = 0;
+			CONSUME;
 			break;
+    /*
+     * START list: [ expr ... ]
+     */
 		case PARSE_LIST_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_RBRACE) {
 				parse_end(p);
@@ -926,67 +989,79 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				parse_err(p, "expr or ``}'' expected");
 				break;
 			}
-			id = 0;
+			CONSUME;
 			break;
 		case PARSE_LIST_2:
 			sp->pnode = &(*sp->pnode)->next;
 			sp->pstate = PARSE_LIST_1;
 			break;
+    /*
+     * START par: "(" expr ")"
+     */
 		case PARSE_PAR_1:
 			sp->pstate = PARSE_PAR_2;
 			parse_begin(p, PARSE_RANGE, sp->pnode);
 			break;
 		case PARSE_PAR_2:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id != TOK_RPAR) {
 				parse_err(p, "')' expected\n");
 				break;
 			}
-			id = 0;
+			CONSUME;
 			parse_end(p);
 			break;
+    /*
+     * START var: "$" ident
+     */
 		case PARSE_VAR_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id != TOK_IDENT) {
 				parse_err(p, "identifier expected");
 				break;
 			}
-			id = 0;
+			CONSUME;
 			*sp->pnode = node_new(&node_vmt_var,
 				data_newref((char *)val));
 			parse_end(p);
 			break;
+    /*
+     * START func: { expr ... }
+     */
 		case PARSE_FUNC_1:
 			sp->pstate = PARSE_FUNC_2;
 			parse_begin(p, PARSE_CALL, sp->pnode);
 			break;
 		case PARSE_FUNC_2:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id != TOK_RBRACKET) {
 				parse_err(p, "']' expected");
 				break;
 			}
-			id = 0;
+			CONSUME;
 			parse_end(p);
 			break;
+    /*
+     * START call: ident [ expr ... ]
+     */
 		case PARSE_CALL:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id != TOK_IDENT) {
 				parse_err(p, "proc identifier expected");
 				break;
 			}
-			id = 0;
+			CONSUME;
 			*sp->pnode = node_new(&node_vmt_call,
 				data_newref((char *)val));
 			sp->pnode = &(*sp->pnode)->list;
 			sp->pstate = PARSE_CALL_1;
 			break;
 		case PARSE_CALL_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (!tok_is(id, first_expr)) {
 				parse_end(p);
@@ -999,14 +1074,17 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 			sp->pnode = &(*sp->pnode)->next;
 			sp->pstate = PARSE_CALL_1;
 			break;
+    /*
+     * START stmt: "let" | "for" | "if" | "return" | foo(a, b, c)
+     */
 		case PARSE_STMT:
-			if (id == 0)
+			if (CONSUMED)
 				return;
-			if (id == TOK_IDENT) {
+			if (id == TOK_IDENT) { // 関数呼び出し
 				sp->pstate = PARSE_ENDL;
 				parse_begin(p, PARSE_CALL, sp->pnode);
 				break;
-			} else if (id == TOK_EXIT) {
+			} else if (id == TOK_EXIT) { // "exit"
 				*sp->pnode = node_new(&node_vmt_exit, NULL);
 				sp->pstate = PARSE_ENDL;
 			} else if (id == TOK_IF) {
@@ -1017,17 +1095,21 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 				sp->pstate = PARSE_RET_1;
 			} else if (id == TOK_LET) {
 				sp->pstate = PARSE_LET_1;
-			} else if (id == TOK_ENDLINE || id == TOK_SEMICOLON) {
+			} else if (id == TOK_ENDLINE || id == TOK_SEMICOLON) { // 空文
 				*sp->pnode = node_new(&node_vmt_nop, NULL);
 				parse_end(p);
 			} else {
 				parse_err(p, "pstatement expected");
 				break;
 			}
-			id = 0;
+			CONSUME; // consume
 			break;
+    /*
+     * "if"   expr slist [ "else" slist ]
+     *      ^here
+     */
 		case PARSE_IF_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (!tok_is(id, first_expr)) {
 				parse_err(p, "expr expected after ``if''");
@@ -1038,115 +1120,161 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 			sp->pstate = PARSE_IF_2;
 			parse_begin(p, PARSE_RANGE, sp->pnode);
 			break;
+    /*
+     * "if" expr   slist [ "else" slist ]
+     +           ^here
+     */
 		case PARSE_IF_2:
 			sp->pnode = &(*sp->pnode)->next;
 			sp->pstate = PARSE_IF_3;
 			parse_begin(p, PARSE_SLIST, sp->pnode);
 			break;
+    /*
+     * "if" expr slist   [ "else" slist ]
+     *                 ^here
+     */
 		case PARSE_IF_3:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id != TOK_ELSE) {
 				parse_end(p);
 				break;
 			}
-			id = 0;
+			CONSUME; // "else" を consume
 			sp->pnode = &(*sp->pnode)->next;
 			sp->pstate = PARSE_IF_4;
 			parse_begin(p, PARSE_SLIST, sp->pnode);
 			break;
+    /*
+     * "if" expr slist [ "else" slist ]
+     *                                  ^here
+     */
 		case PARSE_IF_4:
 			parse_end(p);
 			break;
+    /*
+     * "for"   ident "in" range slist
+     *       ^here
+     */
 		case PARSE_FOR_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id != TOK_IDENT) {
 				parse_err(p, "ident expected after ``for''");
 				break;
 			}
-			id = 0;
+			CONSUME;
 			*sp->pnode = node_new(&node_vmt_for,
 				data_newref((char *)val));
 			sp->pstate = PARSE_FOR_2;
 			break;
+    /*
+     * "for" ident   "in" range slist
+     *             ^here
+     */
 		case PARSE_FOR_2:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id != TOK_IN) {
 				parse_err(p, "``in'' expected");
 				break;
 			}
-			id = 0;
+			CONSUME;
 			sp->pnode = &(*sp->pnode)->list;
 			sp->pstate = PARSE_FOR_3;
 			parse_begin(p, PARSE_RANGE, sp->pnode);
 			break;
+    /*
+     * "for" ident "in" range   slist
+     *                        ^here
+     */
 		case PARSE_FOR_3:
 			sp->pnode = &(*sp->pnode)->next;
 			sp->pstate = PARSE_FOR_4;
 			parse_begin(p, PARSE_SLIST, sp->pnode);
 			break;
+    /*
+     * "for" ident "in" range slist
+     *                              ^here
+     */
 		case PARSE_FOR_4:
 			parse_end(p);
 			break;
+    /*
+     * "return"   range
+     *          ^here
+     */
 		case PARSE_RET_1:
 			*sp->pnode = node_new(&node_vmt_return, NULL);
 			sp->pnode = &(*sp->pnode)->list;
 			sp->pstate = PARSE_ENDL;
 			parse_begin(p, PARSE_RANGE, sp->pnode);
 			break;
+    /*
+     * "let"   ident "=" range
+     *       ^here
+     */
 		case PARSE_LET_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id != TOK_IDENT) {
 				parse_err(p, "ref expected after ``let''");
 				break;
 			}
-			id = 0;
+			CONSUME;
 			*sp->pnode = node_new(&node_vmt_assign, 
 				data_newref((char *)val));
 			sp->pstate = PARSE_LET_2;
 			break;
+    /*
+     * "let" ident   "=" range
+     *             ^here
+     */
 		case PARSE_LET_2:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id != TOK_ASSIGN) {
 				parse_err(p, "``='' expected");
 				break;
 			}
-			id = 0;
+			CONSUME;
 			sp->pnode = &(*sp->pnode)->list;
 			sp->pstate = PARSE_ENDL;
 			parse_begin(p, PARSE_RANGE, sp->pnode);
 			break;
+    /*
+     * START endl: ";" | "\n"
+     */
 		case PARSE_ENDL:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_SEMICOLON || id == TOK_ENDLINE) {
-				id = 0;
+				CONSUME;
 				parse_end(p);
 				break;
 			}
 			parse_err(p, "``;'' or new line expected");
 			break;
+    /*
+     * START slist: "{" stmt* "}"
+     */
 		case PARSE_SLIST:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id != TOK_LBRACE) {
 				parse_err(p, "``{'' expected");
 				break;
 			}
-			id = 0;
+			CONSUME; // "{" を consume する
 			*sp->pnode = node_new(&node_vmt_slist, NULL);
 			sp->pnode = &(*sp->pnode)->list;
 			sp->pstate = PARSE_SLIST_1;
 			break;
 		case PARSE_SLIST_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
-			if (id == TOK_RBRACE) {
-				id = 0;
+			if (id == TOK_RBRACE) { // "}"
+				CONSUME;
 				parse_end(p);
 				break;
 			}
@@ -1157,62 +1285,70 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 			sp->pnode = &(*sp->pnode)->next;
 			sp->pstate = PARSE_SLIST_1;
 			break;
+    /*
+     * START proc: "proc" ident ident* slist
+     */
 		case PARSE_PROC_1:
-			if (id == 0)
+			if (CONSUMED)
 				return;
-			if (id != TOK_IDENT) {
+			if (id != TOK_IDENT) { // ident
 				parse_err(p, "ref expected after ``proc''");
 				break;
 			}
-			id = 0;
+			CONSUME; // consume ident
 			args = data_newlist(NULL);
 			data_listadd(args, 
 				data_newref((char *)val));
 			*sp->pnode = node_new(&node_vmt_proc, args);
 			sp->pstate = PARSE_PROC_2;
 			break;
-		case PARSE_PROC_2:
-			if (id == 0)
+		case PARSE_PROC_2: // ident*
+			if (CONSUMED)
 				return;
 			if (id == TOK_IDENT) {
-				id = 0;
+				CONSUME;
 				args = (*sp->pnode)->data;
 				data_listadd(args, data_newref((char *)val));
 				break;
 			}
-			if (id == TOK_ELLIPSIS) {
-				id = 0;
+			if (id == TOK_ELLIPSIS) { // "..."
+				CONSUME;
 				args = (*sp->pnode)->data;
 				data_listadd(args, data_newref("..."));
 				sp->pstate = PARSE_PROC_3;
 				break;
 			}
-			if (id == TOK_LBRACE) {
+			if (id == TOK_LBRACE) { // "{"
 				sp->pstate = PARSE_PROC_3;
 				break;
 			}
 			parse_err(p, "arg name or block expected\n");
 			break;
-		case PARSE_PROC_3:
-			if (id == 0)
+		case PARSE_PROC_3: // slist
+			if (CONSUMED)
 				return;
 			if (id != TOK_LBRACE) {
 				parse_err(p, "'{' expected\n");
 				break;
 			}
 			sp->pnode = &(*sp->pnode)->list;
-			sp->pstate = PARSE_SLIST;
+			sp->pstate = PARSE_SLIST; // slist に遷移
 			break;
+    /*
+     * XXX: パーサーの開始状態
+     * line: proc
+     *     | stmt
+     */
 		case PARSE_PROG:
-			if (id == 0)
+			if (CONSUMED)
 				return;
-			if (id == TOK_PROC) {
-				id = 0;
-				sp->pstate = PARSE_PROG_1;
+			if (id == TOK_PROC) { // proc
+				CONSUME; // consume "proc"
+				sp->pstate = PARSE_PROG_1; // 非終端記号のパースに入ったら `FOO_1` に遷移
 				parse_begin(p, PARSE_PROC_1, &p->root);
 				break;
 			}
-			if (tok_is(id, first_stmt)) {
+			if (tok_is(id, first_stmt)) { // stmt
 				sp->pstate = PARSE_PROG_1;
 				parse_begin(p, PARSE_STMT, &p->root);
 				break;
@@ -1226,7 +1362,7 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 			sp->pstate = PARSE_PROG;
 			break;
 		case PARSE_ERROR:
-			if (id == 0)
+			if (CONSUMED)
 				return;
 			if (id == TOK_EOF) {
 				sp->pstate = PARSE_PROG;
@@ -1234,7 +1370,7 @@ parse_cb(void *arg, unsigned id, unsigned long val)
 			}
 			if (id == TOK_ENDLINE || id == TOK_RBRACE)
 				sp->pstate = PARSE_PROG;
-			id = 0;
+			CONSUME;
 			break;
 		default:
 			log_puts("parse_handle: bad state\n");

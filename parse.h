@@ -50,6 +50,10 @@ enum TOK_ID {
 struct node;
 struct exec;
 
+// パーサの状態を一時的に保持するための構造体
+/* パーサーが複雑な構文を解析する際に、一時的に現在の状態を保存しておくために使用する.
+ * 例えば、再帰的な構文解析を行う際には、再帰の各ステップでパーサーの状態を保存しておく必要がある.
+ * そのような場合に pst が使用される. */
 struct pst {
 	unsigned pstate;	/* backup of pstate */
 	struct node **pnode;	/* backup of node */
@@ -57,28 +61,29 @@ struct pst {
 
 // レキサーとパーサーがまとまっている
 struct parse {
-	/*
+	/**
 	 * lexical analyser
 	 */
 	unsigned lstate; // lexer の状態
+  // 内部使用のための変数
 	unsigned base;
 	unsigned opindex;
 	unsigned used;
-	void (*tokcb)(void *, unsigned, unsigned long);
-	void *tokarg;
-	char buf[STRING_MAXSZ];
-	unsigned line, col;
-	char *filename;
+	void (*tokcb)(void *, unsigned, unsigned long); // トークンを読み込んだときに呼ばれるコールバック関数
+	void *tokarg; // tokcb の引数
+	char buf[STRING_MAXSZ]; // 文字列格納のためのバッファ
+	unsigned line, col; // 現在解析中の行と列
+	char *filename; // 現在解析中のファイル名
 
-	/*
+	/**
 	 * parser
 	 */
 #define PARSE_STACKLEN	64
-	struct pst stack[PARSE_STACKLEN];
-	struct pst *sp;
-	struct node *root;		/* root of the tree */
-	struct exec *exec;
-	void (*cb)(struct exec *, struct node *);
+	struct pst stack[PARSE_STACKLEN]; // パーサーのスタック
+	struct pst *sp; // スタックポインタ
+	struct node *root; // 構文木のルートノードへのポインタ */
+	struct exec *exec; // 実行環境の情報を保持する exec 構造体へのポインタ
+	void (*cb)(struct exec *, struct node *); // パースが終了したときに呼ばれるコールバック関数
 };
 
 void lex_init(struct parse *, char *,

@@ -32,6 +32,6 @@ void cons_errss(char *, char *, char *);
 void cons_errsu(char *, unsigned long, char *);
 void cons_erruu(unsigned long, unsigned long, char *);
 
-extern int cons_isatty;
+extern int cons_isatty; /* コンソールが対話可能な状態か? */
 
 #endif /* MIDISH_CONS_H */

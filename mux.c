@@ -223,6 +223,8 @@ mux_chgphase(unsigned phase)
 /*
  * send a TIC to all devices that transmit real-time events. The tic
  * is only sent if the device tic_per_unit permits it.
+ * リアルタイム・イベントを送信するすべてのデバイスに TIC を送信する>
+ * TICはデバイスの tic_per_unit が許可した場合のみ送信される.
  */
 void
 mux_sendtic(void)
@@ -474,13 +476,14 @@ mux_timercb(unsigned long delta)
 			}
 		}
 		if (dev->osensto) {
-			if (dev->osensto <= delta) {
-				mididev_putack(dev);
-				mididev_flush(dev);
-				dev->osensto = MIDIDEV_OSENSTO;
-			} else {
-				dev->osensto -= delta;
-			}
+      if (dev->osensto <= delta) {
+        mididev_putack(dev);
+        mididev_flush(dev);
+        dev->osensto = MIDIDEV_OSENSTO;
+      } else {
+        dev->osensto -= delta;
+      }
+    }
 		// MTC のソース解析
 		if (dev->imtc.timo) {
 			if (dev->imtc.timo <= delta) {

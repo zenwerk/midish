@@ -111,12 +111,12 @@ struct mtc {
  * Midi device を表す構造体
  */
 struct mididev {
-	struct devops *ops;
+	struct devops *ops; // デバイス固有の操作を抽象化したdevops構造体へのポインタ
 
 	/*
 	 * device list and iteration stuff
 	 */
-	struct pollfd *pfd;
+	struct pollfd *pfd; // ポーリングに使用するpollfd構造体へのポインタ
 	struct mididev *next;
 
 	/*
@@ -167,7 +167,7 @@ extern unsigned mididev_debug;
 extern struct mididev *mididev_list;
 extern struct mididev *mididev_clksrc;
 extern struct mididev *mididev_mtcsrc;
-extern struct mididev *mididev_byunit[];
+extern struct mididev *mididev_byunit[]; // MIDIデバイス管理テーブル (by unit numberの意味)
 
 struct mididev *raw_new(char *, unsigned);
 struct mididev *alsa_new(char *, unsigned);

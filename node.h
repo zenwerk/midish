@@ -23,9 +23,9 @@ struct exec;
 
 /* 構文木 */
 struct node {
-	struct node_vmt *vmt;
+	struct node_vmt *vmt; // vmb->name でノードの種類を取得できる
 	struct data *data;
-	struct node *next, *list;
+	struct node *next, *list; /* next 兄弟ノード, list 子ノード */
 };
 
 /*

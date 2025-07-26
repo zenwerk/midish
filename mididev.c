@@ -73,7 +73,7 @@ unsigned mididev_debug = 0;
 unsigned mididev_evlen[] = { 2, 2, 2, 2, 1, 1, 2, 0 };
 #define MIDIDEV_EVLEN(status) (mididev_evlen[((status) >> 4) & 7])
 
-struct mididev *mididev_list, *mididev_clksrc, *mididev_mtcsrc;
+struct mididev *mididev_list, *mididev_clksrc /* 外部clockデバイス */, *mididev_mtcsrc /* 外部mtcソース */;
 struct mididev *mididev_byunit[DEFAULT_MAXNDEVS];
 
 /*

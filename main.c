@@ -62,7 +62,7 @@ main(int argc, char **argv)
 		return 0;
 	}
 
-        // XXX: [1] ここからメインループへ
+  // XXX: [1] ここからメインループへ
 	exitcode = user_mainloop();
 
 	return exitcode ? 0 : 1;

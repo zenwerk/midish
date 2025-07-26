@@ -53,15 +53,17 @@ exec_cb(struct exec *e, struct node *root)
 {
 	struct data *data;
 
-	if (root == NULL) {
+	if (root == NULL) { // パースに失敗したパターン
 		log_puts("syntax error\n");
 		return;
 	}
-	if (e->result == RESULT_EXIT) {
+	if (e->result == RESULT_EXIT) { // プログラム終了時
 		log_puts("exitting, skiped\n");
 		return;
 	}
+  // パースできたので実行する
 	e->result = node_exec(root, e, &data);
+  // 返り値があればprint
 	if (data != NULL) {
 		if (data->type != DATA_NIL) {
 			data_print(data);

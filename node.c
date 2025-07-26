@@ -97,17 +97,24 @@ node_insert(struct node **n, struct node *e)
 	*n = e;
 }
 
+/*
+ * nが指すノードをeに置き換える
+ * nは sp->pnode, e は node_new
+ */
 void
 node_replace(struct node **n, struct node *e)
 {
+  log_puts("node_replace:\n");
+  node_log(*n, 0);
+  node_log(e, 0);
 	if (e->list != NULL) {
 		log_puts("node_replace: e->list != NULL\n");
 		panic();
 	}
-	e->list = *n;
-	e->next = (*n)->next;
-	(*n)->next = NULL;
-	*n = e;
+	e->list = *n;         // e->list(子ノード)にnを設定
+	e->next = (*n)->next; // e->next(兄弟ノード) に n->next(のアドレス)を代入
+	(*n)->next = NULL;    // n->next(兄弟ノード) を NULL 初期化
+	*n = e;               // n と e を交換(ポインタの付け替え)
 }
 
 
@@ -120,9 +127,9 @@ node_replace(struct node **n, struct node *e)
  *    3) in expressions (add, ...) *r == NULL if and only if ERROR
  * Ja:
  *   構文木nodeを以下のルールで実行する
- *   1) node_exec は *r == NULL で実行される
- *   2) 式(slist, ..) *r != NULL / RETURN
- *   3) 式(add, ..) *r == NULL / ERROR
+ *   1) node_exec は常に *r == NULL で実行されなければならない
+ *   2) 文(slist, ..) は *r != NULL であるのは RETURN のときのみ
+ *   3) 式(add, ..) は *r == NULL であるのは ERROR のときのみ
  */
 unsigned
 node_exec(struct node *o, struct exec *x, struct data **r)
@@ -591,35 +598,30 @@ node_exec_and(struct node *o, struct exec *x, struct data **r)
 unsigned
 node_exec_or(struct node *o, struct exec *x, struct data **r)
 {
-
 	return node_exec_binary(o, x, r, data_or);
 }
 
 unsigned
 node_exec_not(struct node *o, struct exec *x, struct data **r)
 {
-
 	return node_exec_unary(o, x, r, data_not);
 }
 
 unsigned
 node_exec_add(struct node *o, struct exec *x, struct data **r)
 {
-
 	return node_exec_binary(o, x, r, data_add);
 }
 
 unsigned
 node_exec_sub(struct node *o, struct exec *x, struct data **r)
 {
-
 	return node_exec_binary(o, x, r, data_sub);
 }
 
 unsigned
 node_exec_mul(struct node *o, struct exec *x, struct data **r)
 {
-
 	return node_exec_binary(o, x, r, data_mul);
 }
 
@@ -632,35 +634,30 @@ node_exec_div(struct node *o, struct exec *x, struct data **r)
 unsigned
 node_exec_mod(struct node *o, struct exec *x, struct data **r)
 {
-
 	return node_exec_binary(o, x, r, data_mod);
 }
 
 unsigned
 node_exec_neg(struct node *o, struct exec *x, struct data **r)
 {
-
 	return node_exec_unary(o, x, r, data_neg);
 }
 
 unsigned
 node_exec_lshift(struct node *o, struct exec *x, struct data **r)
 {
-
 	return node_exec_binary(o, x, r, data_lshift);
 }
 
 unsigned
 node_exec_rshift(struct node *o, struct exec *x, struct data **r)
 {
-
 	return node_exec_binary(o, x, r, data_rshift);
 }
 
 unsigned
 node_exec_bitand(struct node *o, struct exec *x, struct data **r)
 {
-
 	return node_exec_binary(o, x, r, data_bitand);
 }
 

@@ -88,11 +88,11 @@ struct ev {
 #define timesig_beats	v0
 #define timesig_tics	v1
 	unsigned v0, v1;
-#define EV_UNDEF	0xffff
+#define EV_UNDEF	0xffff // 65535
 #define EV_MAXDEV	(DEFAULT_MAXNDEVS - 1)
 #define EV_MAXCH	15
-#define EV_MAXCOARSE	0x7f
-#define EV_MAXFINE	0x3fff
+#define EV_MAXCOARSE	0x7f // 127
+#define EV_MAXFINE	0x3fff // 16383
 };
 
 /*
@@ -186,11 +186,13 @@ void	 evspec_map(struct evspec *, struct evspec *,
 /*
  * En:
  *   describes a controller number; this structures defines
- *   how varius other routines bahave when a controller
+ *   how various other routines behave when a controller
  *   event with the same number is found
  * Ja:
  *   コントローラ番号を表す; この構造体は同じ番号のコントローライベントが見つかった時に
  *   多様な他のルーチンがどのように振る舞うかを定義する
+ *
+ *   evctlは,同じ番号を持つコントローライベントが見つかったときに,他のルーチンがどのように動作するかを定義する.
  */
 struct evctl {
 	char *name;		/* controller name or NULL if none */

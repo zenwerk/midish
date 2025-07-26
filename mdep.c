@@ -174,14 +174,14 @@ mux_mdep_close(void)
  *   Return 0 if interrupted by a signal
  * Ja:
  *   入力機器が読み込み可能になるか、次のclock tickになるまで待つ.
- *   その後すべてのイベントを処理する. signalで中断されると 0 を返す
+ *   その後すべてのイベントを処理する. signalで中断されると 0 を返す.
  *   `docons` は console を使うとき(インタラクティブに操作するとき) `1`
  */
 int
 mux_mdep_wait(int docons)
 {
 	int i, res, revents;
-	nfds_t nfds; /* fd の数を扱う構造体 (unsigned long int) */
+	nfds_t nfds; /* fd の数を扱う数値型 (unsigned long int) */
 	struct pollfd *pfd, *tty_pfds, pfds[MAXFDS];
 	struct mididev *dev;
 	unsigned char midibuf[MIDI_BUFSIZE];
